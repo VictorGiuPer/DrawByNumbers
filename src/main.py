@@ -1,41 +1,21 @@
-from helper_functions import display_side_by_side, ensure_rgb
-from image_processing.load_display import load_image, display_image
-from image_processing.edge_detection import detect_edges, display_edges
-from image_processing.quantization import quantization, display_quantizion
-from image_processing.edge_segmentation import segment_image_by_contours, display_segments, extract_larger_segments
+"""
+Main entry point of the program. Calls functions from the other .py files.
+"""
+from image_processing.initial_processing import ImageProcessor
+from plot_utils import plot_image, compare_images
 
 def start_application():
-    image = load_image()  # Let the user select an image
-    if image is not None:
-        # Store plot as figure
-        # fig_original = display_image(image)  # Display the selected image
+    print("Application Started.")
+    # Later takes input from UI
+    processor = ImageProcessor("C:\Victor\DrawByNumbers\TestImages\\flowers_name_in_english.jpg")
+    loaded_image = processor.ensure_rgb_format()
+    plot_image(loaded_image)
+    gray_scale_image = processor.convert_to_grayscale()
+    resized_image = processor.resize_image(width=500)
+    blurred_image = processor.apply_blur(kernel_size=11)
+    # processor.save_image("C:\Victor\DrawByNumbers\TestOutput\output.jpg")
+    compare_images(loaded_image, gray_scale_image, resized_image)
 
-        # Detect Edges
-        print("Detecting Edges")
-        # Store plot as figure
-        edges = detect_edges(image=image)
-        display_edges(image, edges)
-        # display_side_by_side(fig_original, fig_edges)
-
-        # Segment Picture
-        segmented_image, contours = segment_image_by_contours(image=image, edges=edges)
-        fig_segmentation = display_segments(pre_image=edges, 
-                                            segmented_image=segmented_image)
-        
-        extract_larger_segments(image=image, edges=edges)
-
-
-
-
-        num_colors = input("Quantization colors: ")
-        quantized_image = quantization(image, num_colors=int(num_colors))
-        # display_quantizion(original_image=image, quantized_image=quantized_image)
-
-        quanitzed_egdes = detect_edges(quantized_image, cmap="tab10")
-        display_edges(ensure_rgb(quantized_image), quanitzed_egdes, cmap=None)
-
-
-    
 
 # This ensures the app only runs when main.py is executed directly
 if __name__ == "__main__":
