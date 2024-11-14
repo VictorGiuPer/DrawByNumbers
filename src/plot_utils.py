@@ -42,7 +42,7 @@ def compare_images(image1: np.ndarray, image2: np.ndarray, image3: np.ndarray = 
         cmaps.append(cmap3)
 
     # Create subplots. Single row, 5x5 inches
-    fig, axes = plt.subplots(1, len(images), figsize=(5 * len(images), 5))
+    fig, axes = plt.subplots(1, len(images), figsize=(4 * len(images), 4))
     # Checks if only one image was provided
     if len(images) == 1:
         axes = [axes]
