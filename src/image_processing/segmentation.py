@@ -1,3 +1,3 @@
 """
-Edge detection and segmentation logic.
+Segmentation logic.
 """
