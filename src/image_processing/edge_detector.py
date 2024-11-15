@@ -16,6 +16,10 @@ class EdgeDetector:
         """
         pass
 
+    def general_blur(self, image: np.ndarray, kernel_size: int = 5) -> np.ndarray:
+        pass
+
+
     def canny_edges(self, image: np.ndarray, min_val: int = 50, max_val: int = 150) -> np.ndarray:
         """
         Detect edges in the image using the Canny algorithm.
@@ -54,8 +58,8 @@ class EdgeDetector:
             image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
         # Apply sobel edge detection
-        grad_x = cv2.Sobel(image, cv2.CV_64F, 1, 0, ksize=ksize, scale=2)
-        gray_y = cv2.Sobel(image, cv2.CV_64F, 0, 1, ksize=ksize, scale=2)
+        grad_x = cv2.Sobel(image, cv2.CV_64F, 1, 0, ksize=ksize, scale=1, delta=0.5)
+        gray_y = cv2.Sobel(image, cv2.CV_64F, 0, 1, ksize=ksize, scale=1, delta=0.5)
         sobel_edges = cv2.magnitude(grad_x, gray_y)
 
         # Convert to 8-bit image
