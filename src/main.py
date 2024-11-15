@@ -49,10 +49,9 @@ def start_application(image_path: str):
     
     # Perform edge detection and visualize results
     sobel_edges, sobel_edges_blurred = detect_and_compare_edges(gray_scale_image, loaded_image)
-    
-    # You can expand this section with other edge detection or processing methods
 
 # This ensures the app only runs when main.py is executed directly
 if __name__ == "__main__":
-    image_path = "C:/Victor/DrawByNumbers/TestImages/flowers_name_in_english.jpg"
+    # image_path = "C:/Victor/DrawByNumbers/TestImages/flowers_name_in_english.jpg"
+    image_path = "C:/Victor/Photo & Video/Nadine/_DSC0283.jpg"
     start_application(image_path)  # Run the app
