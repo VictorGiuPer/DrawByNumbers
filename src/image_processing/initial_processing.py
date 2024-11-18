@@ -115,22 +115,6 @@ class ImageProcessor:
         resized_image = cv2.resize(self.image, dim, interpolation=cv2.INTER_AREA)
         return resized_image
     
-    def apply_blur(self, kernel_size: int=5) -> np.ndarray:
-        """
-        Apply Gaussian blur to the image.
-
-        Parameters:
-        - kernel_size (int): Size of the Gaussian kernel (must be odd).
-
-        Returns:
-        - np.ndarray: The blurred image.
-        """
-        if self.image is None:
-            raise ValueError("No image loaded. Load an image first.")
-        
-        blurred_image =  cv2.GaussianBlur(self.image, (kernel_size, kernel_size), 0)
-        return blurred_image
-    
     def save_image(self, output_path: str) -> None:
         """
         Save the current image to a file.
