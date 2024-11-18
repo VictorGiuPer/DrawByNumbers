@@ -10,7 +10,8 @@ These functions are intended to help visualize image processing steps in a conve
 
 import matplotlib.pyplot as plt
 import numpy as np
-import cv2
+from mpl_toolkits.mplot3d import Axes3D
+
 
 def plot_image(image: np.ndarray, title: str = "Image", cmap: str = None) -> None:
     """Displays a single image with an optional colormap."""
@@ -58,4 +59,58 @@ def compare_images(image1: np.ndarray, image2: np.ndarray, image3: np.ndarray = 
         axes[idx].axis("off")
 
     plt.tight_layout()
+    plt.show()
+
+def plot_image_3d(image: np.ndarray, downsample_factor: int = 1, colormap: str = 'viridis'):
+    """
+    Plot a 3D surface representation of an image.
+
+    Parameters:
+    - image (np.ndarray): The input image (grayscale or RGB).
+    - downsample_factor (int): Factor to downsample the image for faster plotting.
+    - colormap (str): Colormap to use for grayscale images. Ignored for RGB.
+
+    Returns:
+    None
+    """
+    # Downsample the image for faster processing
+    if downsample_factor > 1:
+        image = image[::downsample_factor, ::downsample_factor]
+    
+    # Check if the image is grayscale or RGB
+    if len(image.shape) == 2:
+        Z = image  # Pixel intensities
+
+        # Grid of (X, Y) coordinates corresponding to the image dimensions.
+        X, Y = np.meshgrid(np.arange(Z.shape[1]), np.arange(Z.shape[0]))
+        
+        # Create a figure and add a 3D subplot for plotting
+        fig = plt.figure(figsize=(10, 8))
+        ax = fig.add_subplot(111, projection='3d')
+
+        # Plot and apply colormap
+        ax.plot_surface(X, Y, Z, cmap=colormap, edgecolor='none')
+        ax.set_title("3D Plot of Grayscale Image")
+
+    elif len(image.shape) == 3 and image.shape[2] == 3:
+        Z = np.mean(image, axis=2) # Pixel intensities (RGB channels averages)
+        
+        # Grid of (X, Y) coordinates corresponding to the image dimensions.
+        X, Y = np.meshgrid(np.arange(Z.shape[1]), np.arange(Z.shape[0]))
+        
+        # Create a figure and add a 3D subplot for plotting.
+        fig = plt.figure(figsize=(10, 8))
+        ax = fig.add_subplot(111, projection='3d')
+        
+        # Plot and use original RGB colors
+        ax.plot_surface(X, Y, Z, facecolors=image / 255, edgecolor='none')
+        ax.set_title("3D Plot of RGB Image")
+    
+    else:
+        raise ValueError("Input image must be grayscale or RGB.")
+
+
+    ax.set_xlabel('X-axis')
+    ax.set_ylabel('Y-axis')
+    ax.set_zlabel('Pixel Intensity')
     plt.show()
