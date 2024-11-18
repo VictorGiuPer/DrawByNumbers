@@ -17,14 +17,6 @@ class EdgeDetector:
         """
         pass
 
-    def general_blur(self, image: np.ndarray, kernel_size: int = 5) -> np.ndarray:
-        if image is None:
-            raise ValueError("No image loaded. Load an image first.")
-        
-        blurred_image =  cv2.GaussianBlur(image, (kernel_size, kernel_size), 0)
-        return blurred_image
-
-
     def canny_edges(self, image: np.ndarray, min_val: int = 50, max_val: int = 150, 
                     blur_kernel_size: int = 5, aperture_size: int = 3, L2gradient: bool = False) -> np.ndarray:
         """
