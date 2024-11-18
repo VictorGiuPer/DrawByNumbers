@@ -1,5 +1,6 @@
 from plot_utils import plot_image, compare_images
 from image_processing.initial_processing import ImageProcessor
+from image_processing.compression import ImageCompressor
 from image_processing.edge_detector import EdgeDetector
 
 # Function to load and process the image
@@ -10,10 +11,19 @@ def load_and_process_image(image_path: str):
     processor = ImageProcessor(image_path)
     
     # Image Processing Pipeline
+    print("Loading Image")
     loaded_image = processor.ensure_rgb_format()
     gray_scale_image = processor.convert_to_grayscale()
     resized_image = processor.resize_image(width=500)
     blurred_image = processor.apply_blur(kernel_size=11)
+
+
+    # Image Compression
+    print("Compressing Image")
+    compressor = ImageCompressor()
+    color_reduced_image = compressor.reduce_color_space(loaded_image, 8)
+    plot_image(color_reduced_image)
+
     
     return loaded_image, gray_scale_image, resized_image, blurred_image
 
@@ -42,13 +52,11 @@ def start_application(image_path: str):
     print("Application Started.")
     
     # Load and process the image
-    loaded_image, gray_scale_image, resized_image, blurred_image = load_and_process_image(image_path)
+    loaded_image, gray_scale_image, resized_image, blurred_image, color_reduced_image = load_and_process_image(image_path)
     
-    # Visualize the processed image
-    plot_image(blurred_image, title="Blurred Image")
     
     # Perform edge detection and visualize results
-    sobel_edges, sobel_edges_blurred = detect_and_compare_edges(gray_scale_image, loaded_image)
+    # sobel_edges, sobel_edges_blurred = detect_and_compare_edges(gray_scale_image, loaded_image)
 
 # This ensures the app only runs when main.py is executed directly
 if __name__ == "__main__":
