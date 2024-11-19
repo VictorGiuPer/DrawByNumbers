@@ -37,7 +37,7 @@ def load_and_compress_image(image_path: str):
     # plot_image_3d(color_reduced_image)
 
     # Blur color_reduced_image
-    color_reduced_blurred_image = compressor.general_blur(color_reduced_image)
+    color_reduced_blurred_image = compressor.gaussian_blur(color_reduced_image)
 
     # Save to output dictionary
     initial_processing["color_reduced_blurred_image"] = color_reduced_blurred_image

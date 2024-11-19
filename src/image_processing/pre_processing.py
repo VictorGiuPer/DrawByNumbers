@@ -37,10 +37,17 @@ class ImageCompressor:
         return compressed_image
     
 
-    def general_blur(self, image: np.ndarray, kernel_size: int = 5) -> np.ndarray:
+    def gaussian_blur(self, image: np.ndarray, kernel_size: int = 5) -> np.ndarray:
         if image is None:
             raise ValueError("No image loaded. Load an image first.")
         
         blurred_image =  cv2.GaussianBlur(image, (kernel_size, kernel_size), 0)
+        return blurred_image
+    
+    def median_blur(self, image: np.ndarray, kernel_size: int = 5) -> np.ndarray:
+        if image is None:
+            raise ValueError("No image loaded. Load an image first.")
+        
+        blurred_image = cv2.medianBlur(image, kernel_size)
         return blurred_image
     
