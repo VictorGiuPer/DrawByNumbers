@@ -1,6 +1,6 @@
 from plot_utils import plot_image, compare_images, plot_image_3d
-from image_processing.initial_processing import ImageProcessor
-from image_processing.compression import ImageCompressor
+from image_processing.load import ImageProcessor
+from image_processing.pre_processing import ImageCompressor
 from image_processing.edge_detector import EdgeDetector
 
 # Function to load and process the image

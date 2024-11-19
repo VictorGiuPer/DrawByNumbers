@@ -10,7 +10,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..',
 # Custom Functions Imports
 from image_processing.edge_detector import EdgeDetector
 from plot_utils import compare_images
-from image_processing.initial_processing import ImageProcessor
+from image_processing.load import ImageProcessor
 
 
 
