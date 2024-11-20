@@ -11,7 +11,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..',
 from image_processing.pre_processing import Preprocessor
 
 
-class TestImageCompressor(unittest.TestCase):
+class TestPreprocessing(unittest.TestCase):
 
     def setUp(self):
         """
