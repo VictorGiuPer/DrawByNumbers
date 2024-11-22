@@ -45,27 +45,50 @@ def pre_processing(load_dict: dict, blur_type: str = "gaussian"):
     # Initialize pre_processor
     pre_processor = Preprocessor()
 
-    # Step 1: Reduce the color space
-    pre_processed_image = pre_processor.reduce_color_space(loaded_image, 200)
-    pre_processing_dict["color_reduced_image"] = pre_processed_image
+    pre_processed_image = loaded_image
 
-    # Step 2: Apply blur
+    # Step 1: Apply blur
     if blur_type.lower() == "median":
         pre_processed_image = pre_processor.median_blur(pre_processed_image)
     elif blur_type.lower() == "gaussian":
         pre_processed_image = pre_processor.gaussian_blur(pre_processed_image)
     else:
         raise ValueError("Not a valid blur method. Choose (gaussian | median).")
-    pre_processing_dict["cr_blurred_image"] = pre_processed_image
+    pre_processing_dict["blurred_image"] = pre_processed_image
+
+    # Step 2: Reduce the color space
+    pre_processed_image = pre_processor.reduce_color_space(pre_processed_image, 200)
+    pre_processing_dict["color_reduced_image"] = pre_processed_image
+
+    """ # Step 2: Apply blur
+    if blur_type.lower() == "median":
+        pre_processed_image = pre_processor.median_blur(pre_processed_image)
+    elif blur_type.lower() == "gaussian":
+        pre_processed_image = pre_processor.gaussian_blur(pre_processed_image)
+    else:
+        raise ValueError("Not a valid blur method. Choose (gaussian | median).")
+    pre_processing_dict["cr_blurred_image"] = pre_processed_image """
 
     # Step 3: Enhance contrast using historgram equalization
-    pre_processed_image =  pre_processor.histogram_equalization(pre_processed_image)
-    pre_processing_dict["cr_bl_equalized_image"] = pre_processed_image
+    pre_processed_image = pre_processor.histogram_equalization(pre_processed_image)
+    pre_processing_dict["cr_equalized_image"] = pre_processed_image
+
+    """ # Step 2.1: Remove low frequency components with High-Pass-Filtering
+    pre_processed_image = pre_processor.high_pass_filter(pre_processed_image)
+    pre_processing_dict["cr_highpass_image"] = pre_processed_image """
+
+    """ # Step 2: Enhance contrast using historgram equalization
+    pre_processed_image = pre_processor.histogram_equalization(pre_processed_image)
+    pre_processing_dict["cr_equalized_image"] = pre_processed_image """
+
 
     # Visualize progression
-    compare_images(pre_processing_dict["color_reduced_image"], pre_processing_dict["cr_blurred_image"], 
-                   pre_processing_dict["cr_bl_equalized_image"], title1="Color Reduced", 
-                   title2="Color Reduced & Blurred", title3 = "Color Reduced, Blurred & Equalized")
+    compare_images(pre_processing_dict["blurred_image"], 
+                   pre_processing_dict["color_reduced_image"],
+                   pre_processing_dict["cr_equalized_image"],
+                   title1="Blurred", 
+                   title2 = "Blurred & Color Reduced", 
+                   title3 = "Blurred, Color Reduced & Equalized")
 
     return pre_processing_dict
 
@@ -123,7 +146,7 @@ def start_application(image_path: str):
 
     # Perform edge detection and visualize results
     print("Detecting Edges")
-    edge_detection = detect_edges(load_dict)
+    # edge_detection = detect_edges(load_dict)
 
 # This ensures the app only runs when main.py is executed directly
 if __name__ == "__main__":
