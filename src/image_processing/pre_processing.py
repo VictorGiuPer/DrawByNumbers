@@ -99,7 +99,7 @@ class Preprocessor:
         else:
             raise ValueError("Input image must be either grayscale or RGB.")
 
-    def high_pass_filter(self, image: np.ndarray, kernel_size: int = 3) -> np.ndarray:
+    def high_pass_filter(self, image: np.ndarray, kernel_size: int = 51) -> np.ndarray:
         """
         Apply a high-pass filter to enhance edges in the image.
 
@@ -114,11 +114,12 @@ class Preprocessor:
             # Create a low-pass filtered image
             blurred = cv2.GaussianBlur(image, (kernel_size, kernel_size), 0)
             # Get high-pass result
-            high_pass_image = cv2.subtract(image, blurred)
+            high_pass_image = cv2.absdiff(image, blurred)
 
             return high_pass_image
 
         elif len(image.shape) == 3:  # RGB image
+            print("RGB")
             # Split the image into its R, G, B channels
             r, g, b = cv2.split(image)
             # Apply high-pass filter to each channel
@@ -176,3 +177,10 @@ class Preprocessor:
             
         else:
             raise ValueError("Input image must be either grayscale or RGB.")
+        
+
+    def enhance_sharpness_unsharp(image: np.ndarray, strength: float = 1.5, kernel_size: int = 5) -> np.ndarray:
+        blurred = cv2.GaussianBlur(image, (kernel_size, kernel_size), 0)
+        high_pass = cv2.subtract(image, blurred)
+        sharpened = cv2.addWeighted(image, 1.0 + strength, high_pass, -strength, 0)
+        return sharpened
