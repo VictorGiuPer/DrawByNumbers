@@ -39,6 +39,7 @@ def pre_processing(load_dict: dict, blur_type: str = "gaussian"):
     """
     # Load necessary images
     loaded_image = load_dict["loaded_image"]
+    plot_image(loaded_image)
     gray_scale_image = load_dict["gray_scale_image"]
     pre_processing_dict = {}
 
@@ -47,18 +48,20 @@ def pre_processing(load_dict: dict, blur_type: str = "gaussian"):
 
     pre_processed_image = loaded_image
 
-    # Step 1: Apply blur
+    """ # Step 1: Apply blur
     if blur_type.lower() == "median":
         pre_processed_image = pre_processor.median_blur(pre_processed_image)
     elif blur_type.lower() == "gaussian":
         pre_processed_image = pre_processor.gaussian_blur(pre_processed_image)
     else:
         raise ValueError("Not a valid blur method. Choose (gaussian | median).")
-    pre_processing_dict["blurred_image"] = pre_processed_image
+    pre_processing_dict["blurred_image"] = pre_processed_image """
 
     # Step 2: Reduce the color space
     pre_processed_image = pre_processor.reduce_color_space(pre_processed_image, 200)
     pre_processing_dict["color_reduced_image"] = pre_processed_image
+
+    plot_image(pre_processed_image)
 
     """ # Step 2: Apply blur
     if blur_type.lower() == "median":
@@ -76,10 +79,6 @@ def pre_processing(load_dict: dict, blur_type: str = "gaussian"):
     """ # Step 2.1: Remove low frequency components with High-Pass-Filtering
     pre_processed_image = pre_processor.high_pass_filter(pre_processed_image)
     pre_processing_dict["cr_highpass_image"] = pre_processed_image """
-
-    """ # Step 2: Enhance contrast using historgram equalization
-    pre_processed_image = pre_processor.histogram_equalization(pre_processed_image)
-    pre_processing_dict["cr_equalized_image"] = pre_processed_image """
 
 
     # Visualize progression
