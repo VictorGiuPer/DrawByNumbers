@@ -1,4 +1,4 @@
-from plot_utils import plot_image, compare_images, plot_image_3d
+from plot_utils import plot_image, compare_images
 from image_processing.load import ImageProcessor
 from image_processing.pre_processing import Preprocessor
 from image_processing.edge_detector import EdgeDetector
@@ -56,15 +56,7 @@ def pre_processing(load_dict: dict, blur_type: str = "gaussian"):
         raise ValueError("Not a valid blur method. Choose (gaussian | median).")
     pre_processing_dict["cr_blurred_img"] = pre_processed_img
 
-
-    compare_images(loaded_img, pre_processed_img)
-
-
-    # Visualize progression
-    """ compare_images(pre_processing_dict["color_reduced_image"],
-                   pre_processing_dict["cr_equalized_image"],
-                   title1 = "Blurred & Color Reduced", 
-                   title2 = "Blurred, Color Reduced & Equalized") """
+    # compare_images(loaded_img, pre_processed_img)
 
     return pre_processing_dict
 
@@ -74,26 +66,23 @@ def detect_edges(load_dict: dict, pre_processing_dict: dict):
     """
     Performs edge detection using Sobel and other methods, then compares the results.
     """
-    edge_detection = {}
     edge_detector = EdgeDetector()
     
     # Apply Canny edge detection
     canny_edges = edge_detector.canny_edges(pre_processing_dict["cr_blurred_img"], 
                                             min_val=10, max_val=40)
 
-    # Save edges to dictionary
-    edge_detection["canny_edges"] = canny_edges
-
     # Export and visualize canny edges
     binary_canny_edges = edge_detector.export_edges(canny_edges)
-    plot_image(binary_canny_edges)
-    compare_images(pre_processing_dict["color_reduced_img"], binary_canny_edges)
+    compare_images(canny_edges, binary_canny_edges, title1="Canny", title2="Binary Canny")
 
-    # Save binary edges to dictionary
-    edge_detection["binary_canny_edges"] = canny_edges
-
-    return edge_detection
+    # Combine edges with original emage
+    edge_img =  edge_detector.image_with_edges(pre_processing_dict["color_reduced_img"], 
+                                               binary_canny_edges, 
+                                               alpha=1)
     
+    # Plot image with edges
+    plot_image(edge_img)
 
 # Main function that coordinates the entire process
 def start_application(image_path: str):
@@ -110,6 +99,8 @@ def start_application(image_path: str):
     # Perform edge detection and visualize results
     print("Detecting Edges")
     edge_detection = detect_edges(load_dict, pre_processing_dict)
+
+    # Applying color reduction and creating color scheme for 
 
 # This ensures the app only runs when main.py is executed directly
 if __name__ == "__main__":
