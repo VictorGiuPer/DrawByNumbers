@@ -18,7 +18,7 @@ class EdgeDetector:
         pass
 
     def canny_edges(self, image: np.ndarray, min_val: int = 50, max_val: int = 150, 
-                    blur_kernel_size: int = 5, aperture_size: int = 3, L2gradient: bool = False) -> np.ndarray:
+                    blur_kernel_size: int = 7, aperture_size: int = 3, L2gradient: bool = False) -> np.ndarray:
         """
         Detect edges in the image using the Canny algorithm with optional preprocessing.
 
@@ -38,7 +38,7 @@ class EdgeDetector:
         if len(image.shape) == 3:
             image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
-        # Apply Gaussian blur before edge detection to reduce noise (optional)
+        # Apply Gaussian blur before edge detection to reduce noise.
         if blur_kernel_size > 0:
             image = cv2.GaussianBlur(image, (blur_kernel_size, blur_kernel_size), 0)
         
@@ -91,36 +91,10 @@ class EdgeDetector:
 
         return sobel_edges
 
-
-    def high_pass_filter(self, image: np.ndarray, kernel_size: int = 3) -> np.ndarray:
-        """
-        Apply a high pass filter to enhance edges in the image.
-
-        Parameters:
-        - image (np.ndarray): Input image (grayscale or BGR).
-        - kernel_size (int): Size of the kernel for the Gaussian blur (must be odd).
-
-        Returns:
-        - np.ndarray: High pass filtered image, emphasizing edges.
-        """
-        if len(image.shape) == 3:
-            image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-
-        # Apply a Gaussian blur to the image (low pass filter)
-        kernel_tuple = (kernel_size, kernel_size)
-        blurred = cv2.GaussianBlur(image, kernel_tuple, 0)
-
-        # Subtract the blurred image from the original to get the high pass result
-        high_pass_filter = cv2.subtract(image, blurred)
-
-        return high_pass_filter
-
-    def export_edges(self, image: np.ndarray) -> np.ndarray:
+    def export_edges(self, edges: np.ndarray) -> np.ndarray:
             """
             Returns only the detected edges as a numpy array.
             """
-            # Apply Sobel edge detection to the image
-            edges = self.sobel_edges(image)
             
             # Create a binary mask (only edges, everything else is black)
             _, binary_edges = cv2.threshold(edges, 50, 255, cv2.THRESH_BINARY)
