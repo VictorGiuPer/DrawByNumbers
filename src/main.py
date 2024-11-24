@@ -14,15 +14,14 @@ def load_image(image_path: str):
     load_dict = {}
 
     # Image Processing Pipeline
-    print("Loading Image")
     loaded_image = processor.ensure_rgb_format()
     gray_scale_image = processor.convert_to_grayscale()
     resized_image = processor.resize_image(width=500)
 
     # Save to output dictionary
-    load_dict["loaded_image"] = loaded_image    
-    load_dict["gray_scale_image"] = gray_scale_image
-    load_dict["resized_image"] = resized_image
+    load_dict["loaded_img"] = loaded_image    
+    load_dict["gray_scale_img"] = gray_scale_image
+    load_dict["resized_img"] = resized_image
 
     return load_dict
 
@@ -31,63 +30,41 @@ def pre_processing(load_dict: dict, blur_type: str = "gaussian"):
     """
     Prepare the image for edge detection.
     - Step 1: Reduce the color space
-    - Step 2: Apply blur (gaussian/median) to smooth the image
     - Step 3: Enhance contrast using histogram equalization
     - Step 4: Apply high-pass filter to emphasize edges
     - Step 5: Thresholding for binarization or enhancement
 
     """
     # Load necessary images
-    loaded_image = load_dict["loaded_image"]
-    plot_image(loaded_image)
-    gray_scale_image = load_dict["gray_scale_image"]
+    loaded_img = load_dict["loaded_img"]
     pre_processing_dict = {}
 
-    # Initialize pre_processor
+    # Initialize pre_processor and pre_processed)image
     pre_processor = Preprocessor()
+    pre_processed_img = loaded_img
 
-    pre_processed_image = loaded_image
+    # Step 1: Reduce the color space
+    pre_processed_img = pre_processor.reduce_color_space(pre_processed_img, 200)
+    pre_processing_dict["color_reduced_img"] = pre_processed_img
 
-    """ # Step 1: Apply blur
+    # Step 2: Apply blur
     if blur_type.lower() == "median":
-        pre_processed_image = pre_processor.median_blur(pre_processed_image)
+        pre_processed_img = pre_processor.median_blur(pre_processed_img)
     elif blur_type.lower() == "gaussian":
-        pre_processed_image = pre_processor.gaussian_blur(pre_processed_image)
+        pre_processed_img = pre_processor.gaussian_blur(pre_processed_img)
     else:
         raise ValueError("Not a valid blur method. Choose (gaussian | median).")
-    pre_processing_dict["blurred_image"] = pre_processed_image """
+    pre_processing_dict["cr_blurred_img"] = pre_processed_img
 
-    # Step 2: Reduce the color space
-    pre_processed_image = pre_processor.reduce_color_space(pre_processed_image, 200)
-    pre_processing_dict["color_reduced_image"] = pre_processed_image
 
-    plot_image(pre_processed_image)
-
-    """ # Step 2: Apply blur
-    if blur_type.lower() == "median":
-        pre_processed_image = pre_processor.median_blur(pre_processed_image)
-    elif blur_type.lower() == "gaussian":
-        pre_processed_image = pre_processor.gaussian_blur(pre_processed_image)
-    else:
-        raise ValueError("Not a valid blur method. Choose (gaussian | median).")
-    pre_processing_dict["cr_blurred_image"] = pre_processed_image """
-
-    # Step 3: Enhance contrast using historgram equalization
-    pre_processed_image = pre_processor.histogram_equalization(pre_processed_image)
-    pre_processing_dict["cr_equalized_image"] = pre_processed_image
-
-    """ # Step 2.1: Remove low frequency components with High-Pass-Filtering
-    pre_processed_image = pre_processor.high_pass_filter(pre_processed_image)
-    pre_processing_dict["cr_highpass_image"] = pre_processed_image """
+    compare_images(loaded_img, pre_processed_img)
 
 
     # Visualize progression
-    compare_images(pre_processing_dict["blurred_image"], 
-                   pre_processing_dict["color_reduced_image"],
+    """ compare_images(pre_processing_dict["color_reduced_image"],
                    pre_processing_dict["cr_equalized_image"],
-                   title1="Blurred", 
-                   title2 = "Blurred & Color Reduced", 
-                   title3 = "Blurred, Color Reduced & Equalized")
+                   title1 = "Blurred & Color Reduced", 
+                   title2 = "Blurred, Color Reduced & Equalized") """
 
     return pre_processing_dict
 
@@ -100,33 +77,20 @@ def detect_edges(load_dict: dict, pre_processing_dict: dict):
     edge_detection = {}
     edge_detector = EdgeDetector()
     
-    # Apply Sobel edge detection
-    print("Detecting Edges")
-    canny_edges = edge_detector.canny_edges(load_dict["gray_scale_image"], 
+    # Apply Canny edge detection
+    canny_edges = edge_detector.canny_edges(pre_processing_dict["cr_blurred_img"], 
                                             min_val=10, max_val=40)
-    sobel_edges = edge_detector.sobel_edges(load_dict["gray_scale_image"], scale=0.3)
 
     # Save edges to dictionary
     edge_detection["canny_edges"] = canny_edges
-    edge_detection["sobel_edges"] = sobel_edges
-    
-    # Compare edge detections
-    compare_images(sobel_edges, canny_edges)
 
     # Export and visualize canny edges
     binary_canny_edges = edge_detector.export_edges(canny_edges)
     plot_image(binary_canny_edges)
-    compare_images(load_dict["color_reduced_blurred_image"], binary_canny_edges)
-
-
-    # Export and visualize sobel edges
-    binary_sobel_edges = edge_detector.export_edges(sobel_edges)
-    plot_image(binary_sobel_edges)
-    compare_images(load_dict["color_reduced_blurred_image"], binary_sobel_edges)
+    compare_images(pre_processing_dict["color_reduced_img"], binary_canny_edges)
 
     # Save binary edges to dictionary
     edge_detection["binary_canny_edges"] = canny_edges
-    edge_detection["binary_sobel_edges"] = sobel_edges
 
     return edge_detection
     
@@ -140,12 +104,12 @@ def start_application(image_path: str):
     load_dict = load_image(image_path)
     
     # Preprocessing
-    print("Preprocessing Image")
-    pre_processing(load_dict)
+    print("Preprocessing")
+    pre_processing_dict = pre_processing(load_dict)
 
     # Perform edge detection and visualize results
     print("Detecting Edges")
-    # edge_detection = detect_edges(load_dict)
+    edge_detection = detect_edges(load_dict, pre_processing_dict)
 
 # This ensures the app only runs when main.py is executed directly
 if __name__ == "__main__":
