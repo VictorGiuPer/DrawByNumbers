@@ -92,15 +92,110 @@ class EdgeDetector:
         return sobel_edges
 
     def export_edges(self, edges: np.ndarray) -> np.ndarray:
-            """
-            Returns only the detected edges as a numpy array.
-            """
+        """
+        Returns only the detected edges with a no background as a numpy array.
+        """
             
-            # Create a binary mask (only edges, everything else is black)
-            _, binary_edges = cv2.threshold(edges, 50, 255, cv2.THRESH_BINARY)
-            
-            # Return the binary edge image as a numpy array
-            return binary_edges
+        # Threshold the edges to get a binary image (255 for edges, 0 for background)
+        _, binary_edges = cv2.threshold(edges, 60, 255, cv2.THRESH_BINARY)
 
+        # Skeletonize the binary edge image to thin the edges
+        refined_edges = self.skeletonize(binary_edges)
+
+        # Create an RGBA image (4 channels: Red, Green, Blue, Alpha)
+        rgba_image = np.zeros((refined_edges.shape[0], refined_edges.shape[1], 4), dtype=np.uint8)
+
+        # Set the RGB channels to black (or any color) for the edges
+        rgba_image[:, :, 0] = 0  # Red channel (black for edges)
+        rgba_image[:, :, 1] = 0  # Green channel (black for edges)
+        rgba_image[:, :, 2] = 0  # Blue channel (black for edges)
+
+        # Set the Alpha channel to the refined edge mask (255 for edges, 0 for background)
+        rgba_image[:, :, 3] = refined_edges
+
+        return rgba_image
+
+    def skeletonize(self, binary_edges: np.ndarray) -> np.ndarray:
+        """
+        Thins edges using skeletonization.
+
+        Parameters:
+        - binary_edges (np.ndarray): Binary edge image with edges as white (255) and background as black (0).
+
+        Returns:
+        - skeleton (np.ndarray): Skeletonized version of the edge map, where edges are thinned to 1-pixel width.
+        """
+        # Initialize an empty image for the final skeleton
+        skeleton = np.zeros_like(binary_edges)
+
+        # Make a copy of the input edges to work on
+        temp = binary_edges.copy()
+
+        # Define the structuring element (3x3 cross-shaped kernel)
+        kernel = cv2.getStructuringElement(cv2.MORPH_CROSS, (3, 3))
+
+        while True:
+            # Erode the binary image to shrink the white regions (edges)
+            eroded = cv2.erode(temp, kernel)
+            
+            # Dilate the eroded image to approximate the original size
+            dilated = cv2.dilate(eroded, kernel)
+            
+            # Subtract the dilated image from the original to find the 'skeleton part'
+            skeleton_part = cv2.subtract(temp, dilated)
+            
+            # Add the skeleton part to the overall skeleton
+            skeleton = cv2.bitwise_or(skeleton, skeleton_part)
+            
+            # Update the temporary image with the eroded version for the next iteration
+            temp = eroded.copy()
+
+            # If there are no more white pixels left, stop the loop
+            if cv2.countNonZero(temp) == 0:
+                break
+
+        return skeleton
+
+    def image_with_edges(self, image: np.ndarray, edges: np.ndarray, edge_color: tuple = (102, 102, 255), alpha: float = 0.5) -> np.ndarray:
+        """
+        Combine edges with the input image.
+
+        Parameters:
+        - image (np.ndarray): The original image (RGB).
+        - edges (np.ndarray): The binary edges to overlay (values 0 or 255).
+        - edge_color (tuple): Color of the edges.
+        - alpha (float): Opacity of the edges when blending (0 to 1).
+
+        Returns:
+        - combined_image (np.ndarray): The image with edges overlaid.
+        """
+
+        # Ensure the input image is 3D (RGB) and edges are 3D (RGBA) or 2D (binary).
+        if len(image.shape) != 3 or (len(edges.shape) != 2 and len(edges.shape) != 3):
+            raise ValueError("Input image must be 3D (RGB) and edges must be either 2D (binary) or 3D (RGBA).")
         
+        if len(edges.shape) == 2:
+            # If edges are in binary format, convert them to RGBA
+            edges = self.export_edges_with_transparency(edges)  # This is where we use the previous function
+
+        # Create an alpha channel image for the original image (fully opaque)
+        image_with_alpha = np.dstack([image, np.ones(image.shape[:2], dtype=np.uint8) * 255])
+
+        # Now, we overlay the edges on top of the image with transparency (using alpha blending)
+        # Get the edge alpha channel (for transparency)
+        edge_alpha = edges[:, :, 3]  # The alpha channel from the RGBA edges image
         
+        # We want to blend the edges onto the image. The edge color is applied where alpha is > 0.
+        edge_mask = edge_alpha > 0  # True where there are edges (non-transparent pixels)
+
+        # Blend the edges with the original image
+        for c in range(3):  # Loop over R, G, B channels
+            # Add edge color on top of the image where edges are detected
+            image_with_alpha[:, :, c] = np.where(
+                edge_mask,  # Where there are edges
+                (alpha * edges[:, :, c] + (1 - alpha) * image[:, :, c]),  # Blend edges with image
+                image_with_alpha[:, :, c]  # Keep original image color where no edges
+            )
+
+        return image_with_alpha
+            
