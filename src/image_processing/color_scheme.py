@@ -4,13 +4,15 @@ Applying color schemes to images. Assign a color to each region.
 import cv2
 import numpy as np
 
-class ColorScheme:
+class ColorSchemeCreator:
     
-    def __init__(self, num_colors=8, custom_palette=None):
+    def __init__(self):
         """
         A class to handles color scheme selection, color 
         quantization and application to segmented regions.
         """
+        pass
+
     def select_color_from_image(self, image: np.ndarray):
         """
         Opens a window to allow the user to select a color by clicking on the image.
@@ -45,7 +47,7 @@ class ColorScheme:
         cv2.waitKey(0)
 
         # If no color was selected (user closed window without clicking)
-        if not selected_color:
+        if selected_color is None:
             raise ValueError("No color was selected.")
 
         return tuple(selected_color[::-1])  # Convert BGR to RGB

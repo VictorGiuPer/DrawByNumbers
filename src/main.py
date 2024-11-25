@@ -2,7 +2,7 @@ from plot_utils import plot_image, compare_images, plot_image_3d
 from image_processing.load import ImageProcessor
 from image_processing.pre_processing import Preprocessor
 from image_processing.edge_detector import EdgeDetector
-import cv2
+from image_processing.color_scheme import ColorSchemeCreator
 
 # Function to load and process the image
 def load_image(image_path: str):
@@ -26,6 +26,7 @@ def load_image(image_path: str):
 
     return load_dict
 
+# Function to pre-process the image for better edge detection
 def pre_processing(load_dict: dict, blur_type: str = "gaussian"):
     # EXTEND FUNCTIONS (STEPS 4 AND 5)
     """
@@ -63,7 +64,6 @@ def pre_processing(load_dict: dict, blur_type: str = "gaussian"):
 
 # Function to perform edge detection and comparison
 def detect_edges(load_dict: dict, pre_processing_dict: dict):
-    # CLEANUP NEEDED
     """
     Performs edge detection using Sobel and other methods, then compares the results.
     """
@@ -80,8 +80,19 @@ def detect_edges(load_dict: dict, pre_processing_dict: dict):
     edge_img = edge_detector.overlay_edges(pre_processing_dict["color_reduced_img"], canny_edges)
     
     # Plot image with edges
-    plot_image(edge_img, title="Image with Edges")
+    # plot_image(edge_img, title="Image with Edges")
     return edge_img
+
+# Function to create color scheme
+def color_scheme(load_dict: dict, edge_img):
+    """
+    Creates the color scheme for the paint by numbers format.
+    """
+    cs_creator = ColorSchemeCreator()
+
+    color_selection = cs_creator.select_color_from_image(edge_img)
+    print(color_selection)
+    pass
 
 # Main function that coordinates the entire process
 def start_application(image_path: str):
@@ -97,11 +108,12 @@ def start_application(image_path: str):
 
     # Perform edge detection and visualize results
     print("Detecting Edges")
-    edge_detection = detect_edges(load_dict, pre_processing_dict)
+    edge_img = detect_edges(load_dict, pre_processing_dict)
 
     # Applying color reduction and creating color scheme for 
     print("Creating Color Scheme")
-    
+    color_scheme(load_dict, edge_img)
+
 
 # This ensures the app only runs when main.py is executed directly
 if __name__ == "__main__":
