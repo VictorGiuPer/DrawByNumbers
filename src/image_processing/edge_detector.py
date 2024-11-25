@@ -156,46 +156,49 @@ class EdgeDetector:
 
         return skeleton
 
-    def image_with_edges(self, image: np.ndarray, edges: np.ndarray, edge_color: tuple = (102, 102, 255), alpha: float = 0.5) -> np.ndarray:
+    def overlay_edges(self, image: np.ndarray, edges: np.ndarray, edge_color: tuple = (0, 0, 0)) -> np.ndarray:
         """
-        Combine edges with the input image.
+        Replace the pixels in the original image with the edges in a specified color.
 
         Parameters:
-        - image (np.ndarray): The original image (RGB).
-        - edges (np.ndarray): The binary edges to overlay (values 0 or 255).
-        - edge_color (tuple): Color of the edges.
-        - alpha (float): Opacity of the edges when blending (0 to 1).
+        - image (np.ndarray): Original RGB image.
+        - edges (np.ndarray): Binary edge map (values 0 or 255).
+        - edge_color (tuple): Color to replace edges with, in RGB.
 
         Returns:
-        - combined_image (np.ndarray): The image with edges overlaid.
+        - result_image (np.ndarray): RGB image with edges overlaid, replacing the original pixels.
         """
+        if len(image.shape) != 3 or image.shape[2] != 3:
+            raise ValueError("Input image must be an RGB image (3 channels).")
+        if len(edges.shape) != 2:
+            raise ValueError("Edges must be a 2D binary array.")
 
-        # Ensure the input image is 3D (RGB) and edges are 3D (RGBA) or 2D (binary).
-        if len(image.shape) != 3 or (len(edges.shape) != 2 and len(edges.shape) != 3):
-            raise ValueError("Input image must be 3D (RGB) and edges must be either 2D (binary) or 3D (RGBA).")
-        
-        if len(edges.shape) == 2:
-            # If edges are in binary format, convert them to RGBA
-            edges = self.export_edges_with_transparency(edges)  # This is where we use the previous function
+        # Create a copy of the original image to avoid modifying it directly
+        result_image = image.copy()
 
-        # Create an alpha channel image for the original image (fully opaque)
-        image_with_alpha = np.dstack([image, np.ones(image.shape[:2], dtype=np.uint8) * 255])
+        # Find where the edges are (non-zero values in the binary edges)
+        edge_mask = edges > 0
 
-        # Now, we overlay the edges on top of the image with transparency (using alpha blending)
-        # Get the edge alpha channel (for transparency)
-        edge_alpha = edges[:, :, 3]  # The alpha channel from the RGBA edges image
-        
-        # We want to blend the edges onto the image. The edge color is applied where alpha is > 0.
-        edge_mask = edge_alpha > 0  # True where there are edges (non-transparent pixels)
+        # Replace the pixels in the original image with the edge color
+        result_image[edge_mask] = edge_color
 
-        # Blend the edges with the original image
-        for c in range(3):  # Loop over R, G, B channels
-            # Add edge color on top of the image where edges are detected
-            image_with_alpha[:, :, c] = np.where(
-                edge_mask,  # Where there are edges
-                (alpha * edges[:, :, c] + (1 - alpha) * image[:, :, c]),  # Blend edges with image
-                image_with_alpha[:, :, c]  # Keep original image color where no edges
-            )
+        return result_image
+    
+    def segment_foreground_background(self, image: np.ndarray, threshold: int = 100) -> tuple:
+        """
+        Segment the foreground and background using a threshold.
 
-        return image_with_alpha
-            
+        Parameters:
+        - image (np.ndarray): Input grayscale image (e.g., edge map or intensity map).
+        - threshold (int): Intensity value to separate background and foreground.
+
+        Returns:
+        - background_mask (np.ndarray): Binary mask for background.
+        - foreground_mask (np.ndarray): Binary mask for foreground.
+        """
+        if len(image.shape) == 3:
+            gray_scale = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
+
+        _, background_mask = cv2.threshold(gray_scale, threshold, 255, cv2.THRESH_BINARY)
+        foreground_mask = cv2.bitwise_not(background_mask)
+        return background_mask, foreground_mask

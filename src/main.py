@@ -1,7 +1,8 @@
-from plot_utils import plot_image, compare_images
+from plot_utils import plot_image, compare_images, plot_image_3d
 from image_processing.load import ImageProcessor
 from image_processing.pre_processing import Preprocessor
 from image_processing.edge_detector import EdgeDetector
+import cv2
 
 # Function to load and process the image
 def load_image(image_path: str):
@@ -44,7 +45,7 @@ def pre_processing(load_dict: dict, blur_type: str = "gaussian"):
     pre_processed_img = loaded_img
 
     # Step 1: Reduce the color space
-    pre_processed_img = pre_processor.reduce_color_space(pre_processed_img, 200)
+    pre_processed_img = pre_processor.reduce_color_space(pre_processed_img, 30)
     pre_processing_dict["color_reduced_img"] = pre_processed_img
 
     # Step 2: Apply blur
@@ -74,15 +75,13 @@ def detect_edges(load_dict: dict, pre_processing_dict: dict):
 
     # Export and visualize canny edges
     binary_canny_edges = edge_detector.export_edges(canny_edges)
-    compare_images(canny_edges, binary_canny_edges, title1="Canny", title2="Binary Canny")
+    # compare_images(canny_edges, binary_canny_edges, title1="Canny", title2="Binary Canny")
 
-    # Combine edges with original emage
-    edge_img =  edge_detector.image_with_edges(pre_processing_dict["color_reduced_img"], 
-                                               binary_canny_edges, 
-                                               alpha=1)
+    edge_img = edge_detector.overlay_edges(pre_processing_dict["color_reduced_img"], canny_edges)
     
     # Plot image with edges
-    plot_image(edge_img)
+    plot_image(edge_img, title="Image with Edges")
+    return edge_img
 
 # Main function that coordinates the entire process
 def start_application(image_path: str):
@@ -101,6 +100,8 @@ def start_application(image_path: str):
     edge_detection = detect_edges(load_dict, pre_processing_dict)
 
     # Applying color reduction and creating color scheme for 
+    print("Creating Color Scheme")
+    
 
 # This ensures the app only runs when main.py is executed directly
 if __name__ == "__main__":
