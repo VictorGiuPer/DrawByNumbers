@@ -1,10 +1,33 @@
 """
-Edge detection logic.
+The `EdgeDetector` class provides edge detection using Canny, 
+with options for preprocessing (e.g., Gaussian blur). It 
+supports overlaying edges on the original image and exporting 
+them with a transparent background. The class also includes 
+functions for skeletonizing edges.
+
+Functions:
+1. `canny_edges`: Detects edges using the Canny algorithm 
+    with customizable thresholds and preprocessing.
+2. `overlay_edges`: Overlays the detected edges onto the 
+    original image in a specified color.
+
+Extra/Unused Functions:
+- `segment_foreground_background`
+- `sobel_edges`
+- `export_edges`
+- `skeletonize`
+
+Dependencies:
+- `numpy`, `cv2` (OpenCV), and `matplotlib.pyplot`.
 """
 import numpy as np
 import cv2
 import matplotlib.pyplot as plt
 
+
+def unused(func):
+    func._unused = True  # Custom attribute to mark unused function
+    return func
 
 class EdgeDetector:
     """
@@ -46,7 +69,37 @@ class EdgeDetector:
         canny_edges = cv2.Canny(image, min_val, max_val, apertureSize=aperture_size, L2gradient=L2gradient)
         
         return canny_edges
+    
+    def overlay_edges(self, image: np.ndarray, edges: np.ndarray, edge_color: tuple = (0, 0, 0)) -> np.ndarray:
+        """
+        Replace the pixels in the original image with the edges in a specified color.
+
+        Parameters:
+        - image (np.ndarray): Original RGB image.
+        - edges (np.ndarray): Binary edge map (values 0 or 255).
+        - edge_color (tuple): Color to replace edges with, in RGB.
+
+        Returns:
+        - result_image (np.ndarray): RGB image with edges overlaid, replacing the original pixels.
+        """
+        if len(image.shape) != 3 or image.shape[2] != 3:
+            raise ValueError("Input image must be an RGB image (3 channels).")
+        if len(edges.shape) != 2:
+            raise ValueError("Edges must be a 2D binary array.")
+
+        # Create a copy of the original image to avoid modifying it directly
+        result_image = image.copy()
+
+        # Find where the edges are (non-zero values in the binary edges)
+        edge_mask = edges > 0
+
+        # Replace the pixels in the original image with the edge color
+        result_image[edge_mask] = edge_color
+
+        return result_image
      
+
+    @unused
     def sobel_edges(self, image: np.ndarray, ksize: int = 3, scale: float = 1, delta: float = 0, 
                     sobel_type: str = 'both', normalize: bool = False) -> np.ndarray:
         """
@@ -91,6 +144,7 @@ class EdgeDetector:
 
         return sobel_edges
 
+    @unused
     def export_edges(self, edges: np.ndarray) -> np.ndarray:
         """
         Returns only the detected edges with a no background as a numpy array.
@@ -115,6 +169,7 @@ class EdgeDetector:
 
         return rgba_image
 
+    @unused
     def skeletonize(self, binary_edges: np.ndarray) -> np.ndarray:
         """
         Thins edges using skeletonization.
@@ -155,35 +210,8 @@ class EdgeDetector:
                 break
 
         return skeleton
-
-    def overlay_edges(self, image: np.ndarray, edges: np.ndarray, edge_color: tuple = (0, 0, 0)) -> np.ndarray:
-        """
-        Replace the pixels in the original image with the edges in a specified color.
-
-        Parameters:
-        - image (np.ndarray): Original RGB image.
-        - edges (np.ndarray): Binary edge map (values 0 or 255).
-        - edge_color (tuple): Color to replace edges with, in RGB.
-
-        Returns:
-        - result_image (np.ndarray): RGB image with edges overlaid, replacing the original pixels.
-        """
-        if len(image.shape) != 3 or image.shape[2] != 3:
-            raise ValueError("Input image must be an RGB image (3 channels).")
-        if len(edges.shape) != 2:
-            raise ValueError("Edges must be a 2D binary array.")
-
-        # Create a copy of the original image to avoid modifying it directly
-        result_image = image.copy()
-
-        # Find where the edges are (non-zero values in the binary edges)
-        edge_mask = edges > 0
-
-        # Replace the pixels in the original image with the edge color
-        result_image[edge_mask] = edge_color
-
-        return result_image
     
+    @unused
     def segment_foreground_background(self, image: np.ndarray, threshold: int = 100) -> tuple:
         """
         Segment the foreground and background using a threshold.
