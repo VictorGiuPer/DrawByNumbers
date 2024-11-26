@@ -73,9 +73,14 @@ def color_scheme(load_dict: dict, edge_img):
 
     for i in range(5):
         selected_color = cs_creator.select_color_from_image(color_zone_img)
+        if len(selected_color) == 0:
+            break
         color_zone_img = cs_creator.color_zones(color_zone_img, selected_color, 10)
 
     compare_images(edge_img, color_zone_img)
+
+    color_zone_reduced_img = cs_creator.reduce_color_space_2(color_zone_img)
+    compare_images(color_zone_img, color_zone_reduced_img)
     return color_zone_img
 
 # Function to perform edge detection and comparison
@@ -96,7 +101,7 @@ def detect_edges(load_dict: dict, color_zone_img):
     edge_img = edge_detector.overlay_edges(color_zone_img, canny_edges)
     
     # Plot image with edges
-    # plot_image(edge_img, title="Image with Edges")
+    plot_image(edge_img, title="Image with Edges")
     return edge_img
 
 # Main function that coordinates the entire process
@@ -117,14 +122,14 @@ def start_application(image_path: str):
 
     # Perform edge detection and visualize results
     print("Detecting Edges")
-    edge_img = detect_edges(load_dict, color_zone_img)
+    # edge_img = detect_edges(load_dict, color_zone_img)
 
 
 
 # This ensures the app only runs when main.py is executed directly
 if __name__ == "__main__":
     # image_path = "C:/Victor/DrawByNumbers/TestImages/flowers_name_in_english.jpg"
-    # image_path = "C:\Victor\DrawByNumbers\TestImages\mickey-mouse-cinderella-castle-1024x683.jpg"
+    image_path = "C:\Victor\DrawByNumbers\TestImages\mickey-mouse-cinderella-castle-1024x683.jpg"
     #image_path = "C:/Victor/Photo & Video/Nadine/_DSC0283.jpg"
-    image_path = "C:/Victor/Photo & Video/Nadine//20240815_172047.jpg"
+    # image_path = "C:/Victor/Photo & Video/Nadine//20240815_172047.jpg"
     start_application(image_path)  # Run the app
