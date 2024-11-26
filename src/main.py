@@ -90,8 +90,18 @@ def color_scheme(load_dict: dict, edge_img):
     """
     cs_creator = ColorSchemeCreator()
 
-    color_selection = cs_creator.select_color_from_image(edge_img)
-    print(color_selection)
+    smooth_zones = True
+    color_zone_img = edge_img
+
+
+    while smooth_zones is True:
+        selected_color = cs_creator.select_color_from_image(color_zone_img)
+        color_zone_img = cs_creator.color_zones(color_zone_img, selected_color, 5)
+        choice = input("Smooth Zones (T/F)?")
+        if choice == "F":
+            smooth_zones = False
+
+    compare_images(edge_img, color_zone_img)
     pass
 
 # Main function that coordinates the entire process
