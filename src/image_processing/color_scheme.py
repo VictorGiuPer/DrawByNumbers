@@ -4,6 +4,7 @@ Applying color schemes to images. Assign a color to each region.
 import cv2
 import numpy as np
 from scipy.spatial.distance import cdist
+from sklearn.cluster import MiniBatchKMeans
 
 
 class ColorSchemeCreator:
@@ -40,8 +41,19 @@ class ColorSchemeCreator:
         # Convert image to BGR for OpenCV display
         image_bgr = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
 
+        # Resize image to fit screen (scale to 80% of original size for example)
+        height, width = image_bgr.shape[:2]
+        max_dim = 800  # Max dimension for resizing (adjust this as needed)
+
+        # Determine scaling factor
+        scale = max_dim / max(height, width)
+
+        # Resize image keeping the aspect ratio
+        new_dim = (int(width * scale), int(height * scale))
+        resized_image = cv2.resize(image_bgr, new_dim)
+
         # Create a window and set the mouse callback
-        cv2.imshow("Select a Color", image_bgr)
+        cv2.imshow("Select a Color", resized_image)
         cv2.setMouseCallback("Select a Color", mouse_callback)
 
         # Wait for the user to select a color
@@ -51,7 +63,7 @@ class ColorSchemeCreator:
         # If no color was selected (user closed window without clicking)
         if selected_color is None:
             raise ValueError("No color was selected.")
-        
+            
         selection = tuple(selected_color)
         return selection
     
@@ -87,3 +99,32 @@ class ColorSchemeCreator:
         smoothed_image[mask] = selected_color
 
         return smoothed_image
+    
+    def reduce_color_space_2(self, image: np.ndarray, n_colors: int = 10) -> np.ndarray:
+        """
+        Reduce the color space of the image using MiniBatchKMeans.
+        
+        Parameters:
+        - image (np.ndarray): Input image in RGB format.
+        - n_colors (int): Number of colors to quantize the image to.
+
+        Returns:
+        - compressed_image (np.ndarray): Image with reduced color space.
+        """
+
+        # Reshape the image to a 2D array of pixels (N x 3)
+        pixel_data = image.reshape((-1, 3))
+
+        # Apply MiniBatchKMeans
+        kmeans = MiniBatchKMeans(n_clusters=n_colors, random_state=0)
+        labels = kmeans.fit_predict(pixel_data)
+        centers = kmeans.cluster_centers_
+
+        # Convert centers to integers (0-255 range)
+        centers = np.uint8(centers)
+
+        # Map each pixel to the nearest cluster center
+        quantized_image = centers[labels]
+        compressed_image = quantized_image.reshape(image.shape)
+
+        return compressed_image
