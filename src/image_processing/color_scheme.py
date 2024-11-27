@@ -31,8 +31,8 @@ class ColorSchemeCreator:
         def mouse_callback(event, x, y, flags, param):
             nonlocal selected_color
             if event == cv2.EVENT_LBUTTONDOWN:  # Left mouse button click
-                # Get the color at the clicked pixel
-                selected_color = image[y, x]
+                # Get the color at the clicked pixel in the resized image
+                selected_color = resized_image[y, x]
                 print(f"Selected Color: {selected_color}")  # Print to console
 
                 # Close the window after selection
@@ -60,12 +60,8 @@ class ColorSchemeCreator:
         print("Click on the image to select a color...")
         cv2.waitKey(0)
 
-        # If no color was selected (user closed window without clicking)
-        if selected_color is None:
-            raise ValueError("No color was selected.")
-            
-        selection = tuple(selected_color)
-        return selection
+        # Return the selected color (from the resized image)
+        return tuple(selected_color)
     
     def color_zones(self, image: np.ndarray, selected_color: tuple, strength: int) -> np.ndarray:
         
@@ -129,6 +125,7 @@ class ColorSchemeCreator:
 
         return compressed_image
 
+    # RE-DO NEEDED
     def get_kmeans_colors(self, image: np.ndarray, num_colors: int = 3) -> tuple:
         """
         Opens a window to allow the user to select multiple colors by clicking on the image.

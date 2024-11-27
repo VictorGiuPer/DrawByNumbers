@@ -79,10 +79,14 @@ def color_scheme(load_dict: dict, edge_img):
 
     compare_images(edge_img, color_zone_img)
 
-    kmeans_colors = cs_creator.get_kmeans_colors(color_zone_img)
+    cz_copy = color_zone_img.copy()
 
-    """ color_zone_reduced_img = cs_creator.reduce_color_space_2(color_zone_img)
-    compare_images(color_zone_img, color_zone_reduced_img) """
+    """ kmeans_colors = cs_creator.get_kmeans_colors(color_zone_img)
+    color_zone_img = cs_creator.custom_kmeans(color_zone_img, kmeans_colors)
+
+    compare_images(cz_copy, color_zone_img) """
+    color_zone_reduced_img = cs_creator.reduce_color_space_2(color_zone_img)
+    compare_images(color_zone_img, color_zone_reduced_img)
 
     return color_zone_img
 
