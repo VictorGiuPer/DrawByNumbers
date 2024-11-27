@@ -208,43 +208,65 @@ class ColorSchemeCreator:
         # Flatten the image to a (num_pixels, 3) array
         pixels = image.reshape((-1, 3)).astype(np.float32)
 
-        # Initialize centroids: user-selection and random selection
+         # Convert user-selected colors to numpy array
         user_colors_np = np.array(user_colors, dtype=np.float32)
-        random_indices = np.random.choice(pixels.shape[0], 
-                                          num_clusters - len(user_colors), 
-                                          replace=False)
-        initial_centroids = np.vstack([user_colors_np, pixels[random_indices]])
+        num_fixed_centroids = len(user_colors)
+
+        # Initialize the label array (-1 means unassigned)
+        labels = -1 * np.ones(pixels.shape[0], dtype=np.int32)
+
+        # Assign pixels to fixed centroids first
+        distances_to_fixed = np.linalg.norm(pixels[:, None] - user_colors_np[None, :], axis=2)
+        fixed_labels = np.argmin(distances_to_fixed, axis=1)
+        fixed_mask = np.min(distances_to_fixed, axis=1) < tolerance  # Threshold for assigning to fixed centroids
+
+        # Update labels with fixed centroids
+        labels[fixed_mask] = fixed_labels[fixed_mask]
+
+        # Extract remaining pixels (not assigned to fixed centroids
+        remaining_pixels = pixels[labels == -1]
         
-        # Debug print statement
-        print(initial_centroids)
-
-        centroids = initial_centroids.copy()
-        prev_centroids = np.zeros_like(centroids)
-        labels = np.zeros(pixels.shape[0], dtype=np.int32)
-
+        # Initialize centroids for remaining clusters
+        num_remaining_clusters = num_clusters - num_fixed_centroids
+        random_indices = np.random.choice(remaining_pixels.shape[0],
+                                          num_remaining_clusters,
+                                          replace=False)
+        remaining_centroids = remaining_pixels[random_indices]
+        prev_centroids = remaining_centroids.copy()
 
         # K-means loop
         for iteration in range(max_iter):
             # Compute distances between each pixel and centroids
-            distances = np.linalg.norm(pixels[:, None] - centroids[None, :], axis=2)
+            remaining_distances = np.linalg.norm(remaining_pixels[:, None] - remaining_centroids[None, :], axis=2)
 
             # Assign each pixel to the closest centroid
-            labels = np.argmin(distances, axis=1)
+            remaining_labels = np.argmin(remaining_distances, axis=1)
 
-            # Update centroids with mean of assigned pixels
-            for i in range(num_clusters):
-                cluster_points = pixels[labels == i]
+            # Update centroids for remaining clusters
+            for i in range(num_remaining_clusters):
+                cluster_points = remaining_pixels[remaining_labels == i]
                 if len(cluster_points) > 0:
-                    centroids[i] = cluster_points.mean(axis=0)
-            
-            # Check for convergence (movement below tolerance)
-            centroid_shift = np.linalg.norm(centroids - prev_centroids, axis=1)
+                    remaining_centroids[i] = cluster_points.mean(axis=0)
+
+            # Check for convergence
+            centroid_shift = np.linalg.norm(remaining_centroids - prev_centroids, axis=1).max()
             if centroid_shift < tolerance:
                 print(f"Convergence reached after {iteration} iterations.")
                 break
 
-            prev_centroids = centroids.copy()
-            clustered_pixels = centroids[labels].astype(np.uint8)
-            clustered_image = clustered_pixels.reshape(image.shape)
+            # Update previous centroids
+            prev_centroids = remaining_centroids.copy()
 
-            return clustered_image
+        # Ensure that the remaining labels map correctly back to the original pixels
+        remaining_labels_mapped = np.zeros(pixels.shape[0], dtype=np.int32)  # Array to store the final label assignments
+        remaining_labels_mapped[labels == -1] = remaining_labels  # Update only the unassigned pixels with the remaining labels
+
+        # Now combine fixed labels and the updated labels for remaining pixels
+        labels[labels == -1] = remaining_labels_mapped[labels == -1]
+
+        # Create the clustered image
+        final_centroids = np.vstack([user_colors_np, remaining_centroids])
+        clustered_pixels = final_centroids[labels].astype(np.uint8)
+        clustered_image = clustered_pixels.reshape(image.shape)
+
+        return clustered_image
