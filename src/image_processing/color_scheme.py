@@ -102,7 +102,7 @@ class ColorSchemeCreator:
         return smoothed_image
     
     # Adapt color zones with 2 colors
-    def midpoint_cs_reduction(self, image:np.ndarray, c1: tuple, c2: tuple, strength: int = 10) -> np.ndarray:
+    def midpoint_red(self, image:np.ndarray, c1: tuple, c2: tuple, strength: int = 10) -> np.ndarray:
         """
         Allows user to select two colors, calculates their midpoint, and replaces all similar colors within a threshold
         with the midpoint color.
@@ -149,9 +149,15 @@ class ColorSchemeCreator:
 
         return modified_image
 
+    # TO DO
+    def midpoint_red_perceptual(self, image: np.ndarray, c1: tuple, c2: tuple, strength: int = 10) -> np.ndarray:
+        pass
+
+
+
 
     # Second iteration kmeans reduction
-    def cs_reduction_k2(self, image: np.ndarray, n_colors: int = 10) -> np.ndarray:
+    def cs_red_k2(self, image: np.ndarray, n_colors: int = 10) -> np.ndarray:
         """
         Reduce the color space of the image using MiniBatchKMeans.
         
@@ -182,7 +188,7 @@ class ColorSchemeCreator:
 
     # RE-DO NEEDED 
     # v v v v v v 
-    
+
     # Custom kmeans color choosing
     def get_kmeans_colors(self, image: np.ndarray, num_colors: int = 3) -> tuple:
         """
