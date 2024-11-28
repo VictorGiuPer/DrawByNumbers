@@ -1,5 +1,24 @@
 """
-Image loading, saving & manipulation.
+Image Loading, Saving, and Manipulation.
+
+This module provides the `ImageProcessor` class, which facilitates core image processing tasks 
+such as loading, saving, grayscale conversion, resizing, and basic pre-processing.
+
+Main Features:
+1. Load images from a file using OpenCV.
+2. Convert images to grayscale for further analysis or processing.
+3. Ensure images are in RGB format (convert from BGR if needed).
+4. Resize images to a specific width, height, or both while maintaining aspect ratio.
+5. Save processed images to a specified file path.
+
+Class:
+- `ImageProcessor`: A class to encapsulate common image processing operations.
+
+Dependencies:
+- OpenCV (`cv2`) for image manipulation.
+- NumPy (`np`) for image array handling.
+- Matplotlib (`pyplot`) for image visualization (optional use).
+- `tkinter` for file dialog support (potentially extensible).
 """
 
 import cv2
