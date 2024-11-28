@@ -46,7 +46,7 @@ def pre_processing(load_dict: dict, blur_type: str = "gaussian"):
     pre_processed_img = loaded_img
 
     # Step 1: Reduce the color space
-    pre_processed_img = pre_processor.cs_reduction_k1(pre_processed_img, 30)
+    pre_processed_img = pre_processor.cs_red_k1(pre_processed_img, 30)
     pre_processing_dict["color_reduced_img"] = pre_processed_img
 
     # Step 2: Apply blur
@@ -99,9 +99,10 @@ def color_scheme(load_dict: dict, edge_img):
         selected_color_2 = cs_creator.get_colors(color_zone_img)
 
         # Apply midpoint color within treshold
-        color_zone_img = cs_creator.midpoint_cs_reduction(color_zone_img, 
+        color_zone_img = cs_creator.midpoint_red(color_zone_img, 
                                                           selected_color_1, 
-                                                          selected_color_2, 5)
+                                                          selected_color_2, 2)
+    
     plot_image(color_zone_img)
 
     # Custom kmeans algorithm
@@ -109,7 +110,8 @@ def color_scheme(load_dict: dict, edge_img):
     color_zone_img = cs_creator.custom_kmeans(color_zone_img, kmeans_colors)
     plot_image(color_zone_img)
 
-    """ color_zone_reduced_img = cs_creator.cs_reduction_k2(color_zone_img)
+    # Second kmeans iteration
+    """ color_zone_reduced_img = cs_creator.cs_red_k2(color_zone_img)
     compare_images(color_zone_img, color_zone_reduced_img) """
 
     return color_zone_img
@@ -160,7 +162,7 @@ def start_application(image_path: str):
 # This ensures the app only runs when main.py is executed directly
 if __name__ == "__main__":
     # image_path = "C:/Victor/DrawByNumbers/TestImages/flowers_name_in_english.jpg"
-    # image_path = "C:\Victor\DrawByNumbers\TestImages\mickey-mouse-cinderella-castle-1024x683.jpg"
-    image_path = "C:/Victor/Photo & Video/Nadine/_DSC0283.jpg"
+    image_path = "C:\Victor\DrawByNumbers\TestImages\mickey-mouse-cinderella-castle-1024x683.jpg"
+    # image_path = "C:/Victor/Photo & Video/Nadine/_DSC0283.jpg"
     # image_path = "C:/Victor/Photo & Video/Nadine//20240815_172047.jpg"
     start_application(image_path)  # Run the app
