@@ -7,7 +7,7 @@ import torch
 
 class Preprocessor:
 
-    def reduce_color_space(self, image: np.ndarray, n_colors: int = 8) -> np.ndarray:
+    def cs_reduction_k1(self, image: np.ndarray, n_colors: int = 8) -> np.ndarray:
         """
         Reduce the color space of the image using MiniBatchKMeans.
         
