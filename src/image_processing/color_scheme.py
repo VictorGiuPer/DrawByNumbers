@@ -8,7 +8,6 @@ from sklearn.cluster import MiniBatchKMeans
 
 
 class ColorSchemeCreator:
-    
     def __init__(self):
         """
         A class to handles color scheme selection, color 
@@ -31,8 +30,12 @@ class ColorSchemeCreator:
         def mouse_callback(event, x, y, flags, param):
             nonlocal selected_color
             if event == cv2.EVENT_LBUTTONDOWN:  # Left mouse button click
-                # Get the color at the clicked pixel in the resized image
-                selected_color = resized_image[y, x]
+                # Map the clicked coordinates back to the original image
+                original_x = int(x / scale)
+                original_y = int(y / scale)
+
+                # Get the color from the original image
+                selected_color = image[original_y, original_x]
                 print(f"Selected Color: {selected_color}")  # Print to console
 
                 # Close the window after selection
@@ -63,7 +66,7 @@ class ColorSchemeCreator:
         # Return the selected color (from the resized image)
         return tuple(selected_color)
     
-    def color_zones(self, image: np.ndarray, selected_color: tuple, strength: int) -> np.ndarray:
+    def color_zones(self, image: np.ndarray, selected_color: tuple, strength: int = 10) -> np.ndarray:
         
         # Maximum Euclidean distance for RGB images (approximation)
         max_distance = 441.67
@@ -96,7 +99,7 @@ class ColorSchemeCreator:
 
         return smoothed_image
     
-    def reduce_color_space_2(self, image: np.ndarray, n_colors: int = 10) -> np.ndarray:
+    def cs_reduction_k2(self, image: np.ndarray, n_colors: int = 10) -> np.ndarray:
         """
         Reduce the color space of the image using MiniBatchKMeans.
         
@@ -267,3 +270,52 @@ class ColorSchemeCreator:
         clustered_image = clustered_pixels.reshape(image.shape)
 
         return clustered_image
+    
+    def midpoint_cs_reduction(self, image:np.ndarray, c1: tuple, c2: tuple, strength: int = 10) -> np.ndarray:
+        """
+        Allows user to select two colors, calculates their midpoint, and replaces all similar colors within a threshold
+        with the midpoint color.
+
+        Parameters:
+        - image (np.ndarray): Input image in RGB format.
+        - threshold (float): Threshold for color similarity (Euclidean distance in RGB space).
+
+        Returns:
+        - np.ndarray: Modified image with reduced color space.
+        """
+        midpoint_color = tuple(((np.array(c1) + np.array(c2)) / 2).astype(int))
+        print(f"Midpoint color: {midpoint_color}")
+
+        # Maximum Euclidean distance in RGB space
+        max_distance = 441.67
+
+        # Calculate threshold based on percentage strength
+        thresh = (strength / 100) * max_distance
+        print(f"Threshold (Euclidean distance): {thresh}")
+
+        # Flatten the image to (num_pixels, 3) for distance calculation
+        pixels = image.reshape((-1, 3))
+
+        # Convert the selected colors to arrays
+        c1_array = np.array(c1).reshape(1, 3)
+        c2_array = np.array(c2).reshape(1, 3)
+
+        # Calculate Euclidean distances from the selected colors
+        distances_c1 = cdist(pixels.astype(np.float32), c1_array.astype(np.float32), metric='euclidean').flatten()
+        distances_c2 = cdist(pixels.astype(np.float32), c2_array.astype(np.float32), metric='euclidean').flatten()
+
+        # Create a mask for pixels within the threshold for either color
+        mask = (distances_c1 < thresh) | (distances_c2 < thresh)
+
+        # Create a copy of the original image to modify
+        modified_pixels = pixels.copy()
+
+        # Apply the midpoint color to the pixels within the mask
+        modified_pixels[mask] = midpoint_color
+
+        # Reshape the modified pixels back to the original image dimensions
+        modified_image = modified_pixels.reshape(image.shape).astype(np.uint8)
+
+        return modified_image
+
+        
