@@ -5,6 +5,8 @@ import cv2
 import numpy as np
 from scipy.spatial.distance import cdist
 from sklearn.cluster import MiniBatchKMeans
+from skimage.color import rgb2lab, lab2rgb
+
 
 
 class ColorSchemeCreator:
@@ -102,7 +104,7 @@ class ColorSchemeCreator:
         return smoothed_image
     
     # Adapt color zones with 2 colors
-    def midpoint_red(self, image:np.ndarray, c1: tuple, c2: tuple, strength: int = 10) -> np.ndarray:
+    def midpoint_red_image(self, image:np.ndarray, c1: tuple, c2: tuple, strength: int = 10) -> np.ndarray:
         """
         Allows user to select two colors, calculates their midpoint, and replaces all similar colors within a threshold
         with the midpoint color.
@@ -151,10 +153,53 @@ class ColorSchemeCreator:
 
     # TO DO
     def midpoint_red_perceptual(self, image: np.ndarray, c1: tuple, c2: tuple, strength: int = 10) -> np.ndarray:
-        pass
+        """
+        Combines two colors perceptually by calculating their midpoint in Lab color space.
+        
+        Parameters:
+        - c1, c2: Tuples representing RGB colors (R, G, B).
+        
+        Returns:
+        - Tuple representing the midpoint color in RGB.
+        """
+        # Convert RGB colors to Lab (scaling RGB values to 0-1 for Lab conversion)
+        c1_lab = rgb2lab(np.array(c1, dtype=np.float32).reshape(1, 1, 3) / 255.0)
+        c2_lab = rgb2lab(np.array(c2, dtype=np.float32).reshape(1, 1, 3) / 255.0)
+        
+        # Calculate lab midpoint and convert to rgb
+        midpoint_lab = (c1_lab + c2_lab) / 2
+        midpoint_rgb = tuple(lab2rgb(midpoint_lab).squeeze() * 255)
+        print(f"Midpoint Color (RGB): {midpoint_rgb}")
 
+        # Calculate threshold based on strength percentage
+        max_distance = 100
+        threshold = max_distance * (strength / 100)
+        print(f"Threshold (Perceptual Distance): {threshold}")
 
+        # Convert image to Lab space for perceptual distance calculations
+        image_lab =  rgb2lab(image.astype(np.float32) / 255.00)
 
+        # Calculate distances from both selected colors in lab space
+        c1_lab_flat = c1_lab.reshape(1, 3)
+        c2_lab_flat = c2_lab.reshape(1, 3)
+        image_lab_flat = image_lab.reshape((-1, 3))
+        distances_c1 = cdist(image_lab_flat, c1_lab_flat, metric="euclidean").flatten()
+        distances_c2 = cdist(image_lab_flat, c2_lab_flat, metric="euclidean").flatten()
+
+        # Create a mask for pixels within the threshold for either selected color
+        mask = (distances_c1 < threshold) | (distances_c2 < threshold)
+        
+        # Modify the image: set all matching pixels to the perceptual midpoint
+        modified_lab = image_lab_flat.copy()
+        modified_lab[mask] = midpoint_lab.flatten()
+
+        modified_image_lab = modified_lab.reshape(image_lab.shape)
+        modified_image_rgb = lab2rgb(modified_image_lab) * 255
+
+        # Ensure the values are in valid range and convert to uint8
+        modified_image_rgb = np.clip(modified_image_rgb, 0, 255).astype(np.uint8)
+
+        return modified_image_rgb
 
     # Second iteration kmeans reduction
     def cs_red_k2(self, image: np.ndarray, n_colors: int = 10) -> np.ndarray:
@@ -185,6 +230,19 @@ class ColorSchemeCreator:
         compressed_image = quantized_image.reshape(image.shape)
 
         return compressed_image
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     # RE-DO NEEDED 
     # v v v v v v 
