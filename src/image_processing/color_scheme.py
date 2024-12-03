@@ -8,7 +8,6 @@ from sklearn.cluster import MiniBatchKMeans
 from skimage.color import rgb2lab, lab2rgb
 
 
-
 class ColorSchemeCreator:
     def __init__(self):
         """
