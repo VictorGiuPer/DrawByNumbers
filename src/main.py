@@ -161,8 +161,8 @@ def start_application(image_path: str):
 
 # This ensures the app only runs when main.py is executed directly
 if __name__ == "__main__":
-    # image_path = "C:/Victor/DrawByNumbers/TestImages/flowers_name_in_english.jpg"
+    image_path = "C:/Victor/DrawByNumbers/TestImages/flowers_name_in_english.jpg"
     # image_path = "C:\Victor\DrawByNumbers\TestImages\mickey-mouse-cinderella-castle-1024x683.jpg"
     # image_path = "C:/Victor/Photo & Video/Nadine/_DSC0283.jpg"
-    image_path = "C:/Victor/Photo & Video/Nadine//20240815_172047.jpg"
+    # image_path = "C:/Victor/Photo & Video/Nadine//20240815_172047.jpg"
     start_application(image_path)  # Run the app
