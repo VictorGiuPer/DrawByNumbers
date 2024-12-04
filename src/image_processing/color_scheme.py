@@ -203,7 +203,7 @@ class ColorSchemeCreator:
 
         return clustered_image
 
-    def box_select(image: np.ndarray) -> tuple:
+    def box_select(self, image: np.ndarray) -> tuple:
         """
         Allows the user to draw a rectangle on the image and returns the rectangle's coordinates.
 
@@ -239,7 +239,7 @@ class ColorSchemeCreator:
         (x1, y1), (x2, y2) = box_coords
         return (min(x1, x2), min(y1, y2)), (max(x1, x2), max(y1, y2))
 
-    def box_color_replacement(image: np.ndarray, c1: tuple, c2: tuple, 
+    def box_color_replacement(self, image: np.ndarray, c1: tuple, c2: tuple, 
                               rect: tuple, strength: int = 10) -> np.ndarray:
         """
         Replaces color c1 with c2 inside a specified rectangular zone in the image.

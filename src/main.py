@@ -63,7 +63,7 @@ def pre_processing(load_dict: dict, blur_type: str = "gaussian"):
     return pre_processing_dict
 
 # Function to create color scheme
-def color_scheme(load_dict: dict, edge_img):
+def color_scheme(load_dict: dict, preprocess_img):
     """
     Creates the color scheme for the paint-by-numbers format.
 
@@ -76,11 +76,13 @@ def color_scheme(load_dict: dict, edge_img):
     """
     # Instantiate ColorSchemeCreator
     cs_creator = ColorSchemeCreator()
+    color_images = {}
 
     # Initialize color_zone_image
-    color_zone_img = edge_img
+    color_zone_img = preprocess_img
+    color_images["PreProcess"] = color_zone_img
 
-    # Refine color zones based on selected colors
+    # Refine color zones: Threshold with selected colors.
     for i in range(5):
         selected_color = cs_creator.get_colors(color_zone_img)
 
@@ -88,12 +90,12 @@ def color_scheme(load_dict: dict, edge_img):
         if len(selected_color) == 0:
             break
 
-        # Refine color zones within threshold with selected colors.
         color_zone_img = cs_creator.color_zones(color_zone_img, selected_color, 10)
 
-    compare_images(edge_img, color_zone_img)
+    color_images["ThresholdMerge"] = color_zone_img
+    compare_images(color_images["PreProcess"], color_images["ThresholdMerge"])
 
-    # Refine color zones based on color midpoint
+    # Refine color zones: Color midpoint
     for i in range(3):
         selected_color_1 = cs_creator.get_colors(color_zone_img)
         selected_color_2 = cs_creator.get_colors(color_zone_img)
@@ -102,17 +104,29 @@ def color_scheme(load_dict: dict, edge_img):
         color_zone_img = cs_creator.midpoint_perceptual(color_zone_img, 
                                                           selected_color_1, 
                                                           selected_color_2, 2)
-        
-    plot_image(color_zone_img)
+    color_images["MidPoint"] = color_zone_img
+    plot_image(color_images["MidPoint"])
+
+
+    # Refine color zones: Manual color replacement
+    for i in range(1):
+        selected_color_1 = cs_creator.get_colors(color_zone_img)
+        selected_color_2 = cs_creator.get_colors(color_zone_img)
+        box_selection = cs_creator.box_select(color_zone_img)
+        color_zone_img = cs_creator.box_color_replacement(color_zone_img, selected_color_1, 
+                                                          selected_color_2, box_selection)
+    color_images["ManualReplacement"] = color_zone_img
+    plot_image(color_images["ManualReplacement"])
 
     # Custom kmeans algorithm
     kmeans_colors = []
     for i in range(3):
         kmeans_c = cs_creator.get_colors(color_zone_img)
         kmeans_colors.append(kmeans_c)
-    color_zone_reduced_img = cs_creator.kmeans_color_replacement(color_zone_img, kmeans_colors, 10, 10)
-    compare_images(color_zone_img, color_zone_reduced_img)
+    color_zone_img = cs_creator.kmeans_color_replacement(color_zone_img, kmeans_colors, 10, 10)
 
+    color_images["KMeans2"] = color_zone_img
+    compare_images(color_images["ManualReplacement"], color_images["KMeans2"])
 
     return color_zone_img
 
@@ -162,7 +176,7 @@ def start_application(image_path: str):
 # This ensures the app only runs when main.py is executed directly
 if __name__ == "__main__":
     # image_path = "C:/Victor/DrawByNumbers/TestImages/flowers_name_in_english.jpg"
-    image_path = "C:\Victor\DrawByNumbers\TestImages\mickey-mouse-cinderella-castle-1024x683.jpg"
+    # image_path = "C:\Victor\DrawByNumbers\TestImages\mickey-mouse-cinderella-castle-1024x683.jpg"
     # image_path = "C:/Victor/Photo & Video/Nadine/_DSC0283.jpg"
-    # image_path = "C:/Victor/Photo & Video/Nadine//20240815_172047.jpg"
+    image_path = "C:/Victor/Photo & Video/Nadine//20240815_172047.jpg"
     start_application(image_path)  # Run the app
