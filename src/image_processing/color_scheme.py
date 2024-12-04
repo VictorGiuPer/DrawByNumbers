@@ -70,23 +70,28 @@ class ColorSchemeCreator:
     
     # Adapt color zones with 1 color
     def color_zones(self, image: np.ndarray, selected_color: tuple, strength: int = 10) -> np.ndarray:
-        
-        # Maximum Euclidean distance for RGB images (approximation)
-        max_distance = 441.67
+        selected_color = self.get_colors(image)
+        # Convert the selected color to Lab space
+        selected_color_lab = rgb2lab(np.array(selected_color, dtype=np.float32).reshape(1, 1, 3) / 255.0)
+
+        # Maximum perceptual distance in Lab space (approximation)
+        max_distance = 100.0  # Lab distances range from 0 to ~100
 
         # Adapt threshold based on strength percentage
         threshold = (strength / 100) * max_distance
-        
-        # Flatten the image to (num_pixels, 3) for easier distance calculation
-        image_flat = image.reshape((-1, 3))
-        
-        # Convert the selected color to a 2D array (1, 3)
-        selected_color_array = np.array(selected_color).reshape(1, 3)
+        print(f"Threshold (Perceptual Distance): {threshold}")
 
-        # Calculate the Euclidean distances from the selected color for all pixels in the image
-        distance = cdist(image_flat.astype(np.float32), 
-                         selected_color_array.astype(np.float32), 
-                         metric='euclidean').flatten()
+        # Convert the input image to Lab space
+        image_lab = rgb2lab(image.astype(np.float32) / 255.0)
+
+        # Flatten the image and selected color arrays for distance calculation
+        image_lab_flat = image_lab.reshape((-1, 3))
+        selected_color_lab_flat = selected_color_lab.reshape(1, 3)
+
+        # Calculate Euclidean distances from the selected color for all pixels in the image (in Lab space)
+        distance = cdist(image_lab_flat.astype(np.float32),
+                        selected_color_lab_flat.astype(np.float32),
+                        metric='euclidean').flatten()
 
         # Create a mask for pixels that are within the threshold distance to the selected color
         mask = distance < threshold
@@ -94,7 +99,7 @@ class ColorSchemeCreator:
         # Reshape the mask back to the image shape (height, width)
         mask = mask.reshape(image.shape[0], image.shape[1])
 
-        # Create a copy of the original image to apply the color smoothing
+        # Create a copy of the original image to modify
         smoothed_image = image.copy()
 
         # Apply the selected color to the pixels that match the mask
@@ -102,56 +107,8 @@ class ColorSchemeCreator:
 
         return smoothed_image
     
-    # Adapt color zones with 2 colors
-    def midpoint_red_image(self, image:np.ndarray, c1: tuple, c2: tuple, strength: int = 10) -> np.ndarray:
-        """
-        Allows user to select two colors, calculates their midpoint, and replaces all similar colors within a threshold
-        with the midpoint color.
-
-        Parameters:
-        - image (np.ndarray): Input image in RGB format.
-        - threshold (float): Threshold for color similarity (Euclidean distance in RGB space).
-
-        Returns:
-        - np.ndarray: Modified image with reduced color space.
-        """
-        midpoint_color = tuple(((np.array(c1) + np.array(c2)) / 2).astype(int))
-        print(f"Midpoint color: {midpoint_color}")
-
-        # Maximum Euclidean distance in RGB space
-        max_distance = 441.67
-
-        # Calculate threshold based on percentage strength
-        thresh = (strength / 100) * max_distance
-        print(f"Threshold (Euclidean distance): {thresh}")
-
-        # Flatten the image to (num_pixels, 3) for distance calculation
-        pixels = image.reshape((-1, 3))
-
-        # Convert the selected colors to arrays
-        c1_array = np.array(c1).reshape(1, 3)
-        c2_array = np.array(c2).reshape(1, 3)
-
-        # Calculate Euclidean distances from the selected colors
-        distances_c1 = cdist(pixels.astype(np.float32), c1_array.astype(np.float32), metric='euclidean').flatten()
-        distances_c2 = cdist(pixels.astype(np.float32), c2_array.astype(np.float32), metric='euclidean').flatten()
-
-        # Create a mask for pixels within the threshold for either color
-        mask = (distances_c1 < thresh) | (distances_c2 < thresh)
-
-        # Create a copy of the original image to modify
-        modified_pixels = pixels.copy()
-
-        # Apply the midpoint color to the pixels within the mask
-        modified_pixels[mask] = midpoint_color
-
-        # Reshape the modified pixels back to the original image dimensions
-        modified_image = modified_pixels.reshape(image.shape).astype(np.uint8)
-
-        return modified_image
-
-    # TO DO
-    def midpoint_red_perceptual(self, image: np.ndarray, c1: tuple, c2: tuple, strength: int = 10) -> np.ndarray:
+    # Adapt color zones with 2 colors (perceptual)
+    def midpoint_perceptual(self, image: np.ndarray, c1: tuple, c2: tuple, strength: int = 10) -> np.ndarray:
         """
         Combines two colors perceptually by calculating their midpoint in Lab color space.
         
@@ -200,193 +157,127 @@ class ColorSchemeCreator:
 
         return modified_image_rgb
 
-    # Second iteration kmeans reduction
-    def cs_red_k2(self, image: np.ndarray, n_colors: int = 10) -> np.ndarray:
-        """
-        Reduce the color space of the image using MiniBatchKMeans.
+    def kmeans_color_replacement(self, image: np.ndarray, colors: list, 
+                                 strength: int = 10, n_colors: int = 10) -> np.ndarray:
+        image_lab = rgb2lab(image.astype(np.float32) / 255.0)
+        # Maximum perceptual distance in Lab space
+        max_distance = 100.0
+
+        # Adapt threshold based on strength percentage
+        threshold = (strength / 100) * max_distance
         
-        Parameters:
-        - image (np.ndarray): Input image in RGB format.
-        - n_colors (int): Number of colors to quantize the image to.
+        # Create masks for each selected color
+        masks = []
+        for color in colors:
+            # Convert the current color to Lab
+            color_lab = rgb2lab(np.array(color, dtype=np.float32).reshape(1, 1, 3) / 255.0)
 
-        Returns:
-        - compressed_image (np.ndarray): Image with reduced color space.
-        """
+            # Flatten image Lab for distance calculation
+            image_lab_flat = image_lab.reshape((-1, 3))
+            color_lab_flat = color_lab.reshape(1, 3)
 
-        # Reshape the image to a 2D array of pixels (N x 3)
-        pixel_data = image.reshape((-1, 3))
+            # Calculate Euclidean distance in Lab space
+            distances = cdist(image_lab_flat, color_lab_flat, metric='euclidean').flatten()
 
-        # Apply MiniBatchKMeans
-        kmeans = MiniBatchKMeans(n_clusters=n_colors, random_state=0)
-        labels = kmeans.fit_predict(pixel_data)
-        centers = kmeans.cluster_centers_
+            # Create a mask for pixels within the threshold
+            mask = (distances < threshold).reshape(image.shape[0], image.shape[1])
+            masks.append(mask)
 
-        # Convert centers to integers (0-255 range)
-        centers = np.uint8(centers)
+        # Save masks (pixel locations)
+        saved_regions = [image[mask] for mask in masks]
 
-        # Map each pixel to the nearest cluster center
-        quantized_image = centers[labels]
-        compressed_image = quantized_image.reshape(image.shape)
+        # Flatten the image for K-Means clustering
+        image_flat = image.reshape((-1, 3))
 
-        return compressed_image
+        # Perform K-Means clustering
+        kmeans = MiniBatchKMeans(n_clusters=n_colors, random_state=42)
+        kmeans.fit(image_flat)
+        clustered_flat = kmeans.cluster_centers_[kmeans.labels_].astype(np.uint8)
 
+        # Reshape back to image dimensions
+        clustered_image = clustered_flat.reshape(image.shape)
 
-
-
-
-
-
-
-
-
-
-
-
-
-    # RE-DO NEEDED 
-    # v v v v v v 
-
-    # Custom kmeans color choosing
-    def get_kmeans_colors(self, image: np.ndarray, num_colors: int = 3) -> tuple:
-        """
-        Opens a window to allow the user to select multiple colors by clicking on the image.
-
-        Parameters:
-        - image (np.ndarray): The input image (RGB).
-        - num_colors (int): Number of colors the user can select.
-
-        Returns:
-        - list[tuple]: List of selected colors as (R, G, B) tuples.
-        """
-        selected_colors = []
-
-        def mouse_callback(event, x, y, flags, param):
-            nonlocal selected_colors
-            if event == cv2.EVENT_LBUTTONDOWN:  # Left mouse button click
-                # Get the color at the clicked pixel
-                color = image[y, x].tolist()  # Convert to list for tuple conversion later
-                selected_colors.append(tuple(color))
-                print(f"Selected Color {len(selected_colors)}: {color}")
-
-                # Draw a marker on the image at the selected point
-                cv2.circle(resized_image, (x, y), 5, (0, 255, 0), -1)
-                cv2.imshow("Select a Color", resized_image)
-
-                # Close the window if the required number of colors has been selected
-                if len(selected_colors) >= num_colors:
-                    cv2.destroyAllWindows()
-
-        # Convert image to BGR for OpenCV display
-        image_bgr = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
-
-        # Resize image to fit screen (scale to 80% of original size for example)
-        height, width = image_bgr.shape[:2]
-        max_dim = 800  # Max dimension for resizing (adjust this as needed)
-
-        # Determine scaling factor
-        scale = max_dim / max(height, width)
-
-        # Resize image keeping the aspect ratio
-        new_dim = (int(width * scale), int(height * scale))
-        resized_image = cv2.resize(image_bgr, new_dim)
-
-        # Create a window and set the mouse callback
-        cv2.imshow("Select a Color", resized_image)
-        cv2.setMouseCallback("Select a Color", mouse_callback)
-
-        # Wait for the user to select colors
-        print(f"Click on the image to select {num_colors} colors...")
-        cv2.waitKey(0)
-
-        # If fewer than the required number of colors were selected
-        if len(selected_colors) < num_colors:
-            raise ValueError(f"Only {len(selected_colors)} colors were selected. Please select {num_colors}.")
-
-        return selected_colors
-
-    # Custom kmeans color implementation
-    def custom_kmeans(self, image: np.ndarray, user_colors: list[tuple],
-                       num_clusters: int = 10, max_iter: int = 100, 
-                       tolerance: float = 1e-4) -> np.ndarray:
-        """
-        Implements K-means clustering with user-selected colors as fixed initial centroids.
-
-        Parameters:
-        - image (np.ndarray): Input image in RGB format.
-        - user_colors (list[tuple]): List of user-selected colors as (R, G, B) tuples.
-        - num_clusters (int): Total number of clusters.
-        - max_iter (int): Maximum number of iterations for convergence.
-        - tol (float): Tolerance for centroid movement to determine convergence.
-
-        Returns:
-        - clustered_image (np.ndarray): Image where each pixel is replaced by its cluster's centroid.
-        """
-        if len(user_colors) >= num_clusters:
-            raise ValueError("Number of user-selected colors must be less than the total number of clusters.")
-        
-        # Flatten the image to a (num_pixels, 3) array
-        pixels = image.reshape((-1, 3)).astype(np.float32)
-
-         # Convert user-selected colors to numpy array
-        user_colors_np = np.array(user_colors, dtype=np.float32)
-        num_fixed_centroids = len(user_colors)
-
-        # Initialize the label array (-1 means unassigned)
-        labels = -1 * np.ones(pixels.shape[0], dtype=np.int32)
-
-        # Assign pixels to fixed centroids first
-        distances_to_fixed = np.linalg.norm(pixels[:, None] - user_colors_np[None, :], axis=2)
-        fixed_labels = np.argmin(distances_to_fixed, axis=1)
-        fixed_mask = np.min(distances_to_fixed, axis=1) < tolerance  # Threshold for assigning to fixed centroids
-
-        # Update labels with fixed centroids
-        labels[fixed_mask] = fixed_labels[fixed_mask]
-
-        # Extract remaining pixels (not assigned to fixed centroids
-        remaining_pixels = pixels[labels == -1]
-        
-        # Initialize centroids for remaining clusters
-        num_remaining_clusters = num_clusters - num_fixed_centroids
-        random_indices = np.random.choice(remaining_pixels.shape[0],
-                                          num_remaining_clusters,
-                                          replace=False)
-        remaining_centroids = remaining_pixels[random_indices]
-        prev_centroids = remaining_centroids.copy()
-
-        # K-means loop
-        for iteration in range(max_iter):
-            # Compute distances between each pixel and centroids
-            remaining_distances = np.linalg.norm(remaining_pixels[:, None] - remaining_centroids[None, :], axis=2)
-
-            # Assign each pixel to the closest centroid
-            remaining_labels = np.argmin(remaining_distances, axis=1)
-
-            # Update centroids for remaining clusters
-            for i in range(num_remaining_clusters):
-                cluster_points = remaining_pixels[remaining_labels == i]
-                if len(cluster_points) > 0:
-                    remaining_centroids[i] = cluster_points.mean(axis=0)
-
-            # Check for convergence
-            centroid_shift = np.linalg.norm(remaining_centroids - prev_centroids, axis=1).max()
-            if centroid_shift < tolerance:
-                print(f"Convergence reached after {iteration} iterations.")
-                break
-
-            # Update previous centroids
-            prev_centroids = remaining_centroids.copy()
-
-        # Ensure that the remaining labels map correctly back to the original pixels
-        remaining_labels_mapped = np.zeros(pixels.shape[0], dtype=np.int32)  # Array to store the final label assignments
-        remaining_labels_mapped[labels == -1] = remaining_labels  # Update only the unassigned pixels with the remaining labels
-
-        # Now combine fixed labels and the updated labels for remaining pixels
-        labels[labels == -1] = remaining_labels_mapped[labels == -1]
-
-        # Create the clustered image
-        final_centroids = np.vstack([user_colors_np, remaining_centroids])
-        clustered_pixels = final_centroids[labels].astype(np.uint8)
-        clustered_image = clustered_pixels.reshape(image.shape)
+        # Restore original colors in the masked regions
+        for mask, region in zip(masks, saved_regions):
+            clustered_image[mask] = region
 
         return clustered_image
-    
+
+    def box_select(image: np.ndarray) -> tuple:
+        """
+        Allows the user to draw a rectangle on the image and returns the rectangle's coordinates.
+
+        Parameters:
+        - image (np.ndarray): Input image in RGB format.
+
+        Returns:
+        - tuple: ((x1, y1), (x2, y2)) coordinates of the rectangle.
+        """
+        box_coords = []
+
+        def draw_rectangle(event, x, y, flags, param):
+            nonlocal box_coords
+            if event == cv2.EVENT_LBUTTONDOWN:
+                # Start point of the rectangle
+                box_coords = [(x, y)]
+            elif event == cv2.EVENT_LBUTTONUP:
+                # End point of the rectangle
+                box_coords.append((x, y))
+                cv2.destroyAllWindows()
+
+        # Display the image for user interaction
+        temp_image = image.copy()
+        cv2.imshow("Draw a rectangle (drag with mouse)", cv2.cvtColor(temp_image, cv2.COLOR_RGB2BGR))
+        cv2.setMouseCallback("Draw a rectangle (drag with mouse)", draw_rectangle)
+        print("Drag with the mouse to select a rectangular zone.")
+        cv2.waitKey(0)
+
+        if len(box_coords) != 2:
+            raise ValueError("Rectangle not defined properly.")
+
+        # Extract and sort rectangle coordinates
+        (x1, y1), (x2, y2) = box_coords
+        return (min(x1, x2), min(y1, y2)), (max(x1, x2), max(y1, y2))
+
+    def box_color_replacement(image: np.ndarray, c1: tuple, c2: tuple, 
+                              rect: tuple, strength: int = 10) -> np.ndarray:
+        """
+        Replaces color c1 with c2 inside a specified rectangular zone in the image.
+
+        Parameters:
+        - image (np.ndarray): Input image in RGB format.
+        - c1 (tuple): The original color (R, G, B) to be replaced.
+        - c2 (tuple): The target replacement color (R, G, B).
+        - rect (tuple): ((x1, y1), (x2, y2)) coordinates of the rectangle.
+        - strength (int): Threshold for similarity to c1 (in percentage).
+
+        Returns:
+        - np.ndarray: Modified image with replacements applied inside the defined rectangle.
+        """
+        (x1, y1), (x2, y2) = rect
+
+        # Crop the defined rectangle
+        region = image[y1:y2, x1:x2]
+
+        # Calculate the threshold in RGB space
+        max_distance = 441.67  # Max possible Euclidean distance in RGB
+        threshold = (strength / 100) * max_distance
+
+        # Flatten the region for easier color comparison
+        region_flat = region.reshape((-1, 3))
+
+        # Calculate the Euclidean distance from c1
+        distances = cdist(region_flat.astype(np.float32), np.array([c1], dtype=np.float32)).flatten()
+
+        # Create a mask for pixels matching the color within the threshold
+        mask = distances < threshold
+        mask = mask.reshape(region.shape[:2])
+
+        # Replace the matching pixels with c2
+        region[mask] = c2
+
+        # Put the modified region back into the original image
+        modified_image = image.copy()
+        modified_image[y1:y2, x1:x2] = region
+
+        return modified_image
