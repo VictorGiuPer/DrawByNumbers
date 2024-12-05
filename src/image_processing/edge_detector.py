@@ -24,11 +24,6 @@ import numpy as np
 import cv2
 import matplotlib.pyplot as plt
 
-
-def unused(func):
-    func._unused = True  # Custom attribute to mark unused function
-    return func
-
 class EdgeDetector:
     """
     A class to detect edges in an image 
@@ -40,6 +35,7 @@ class EdgeDetector:
         """
         pass
 
+    # Generate Edges (Canny Algorithm)
     def canny_edges(self, image: np.ndarray, min_val: int = 50, max_val: int = 150, 
                     blur_kernel_size: int = 7, aperture_size: int = 3, L2gradient: bool = False) -> np.ndarray:
         """
@@ -70,6 +66,21 @@ class EdgeDetector:
         
         return canny_edges
     
+    # Refine Edges
+    def refine_edges(self, edges: np.ndarray, kernel: int = 3, iterations: int = 1) -> np.ndarray:
+        """
+        Refine edges by closing gaps using morphological operations.
+        """
+        # Define the structuring element (kernel)
+        kernel = np.ones((kernel, kernel), np.uint8)
+
+        # Dilation followed by erosion to close small gaps in the edges
+        refined_edges = cv2.dilate(edges, kernel, iterations=iterations)
+        refined_edges = cv2.erode(refined_edges, kernel, iterations=iterations)
+
+        return refined_edges
+
+    # Overlay image with edges
     def overlay_edges(self, image: np.ndarray, edges: np.ndarray, edge_color: tuple = (0, 0, 0)) -> np.ndarray:
         """
         Replace the pixels in the original image with the edges in a specified color.
@@ -99,7 +110,6 @@ class EdgeDetector:
         return result_image
      
 
-    @unused
     def sobel_edges(self, image: np.ndarray, ksize: int = 3, scale: float = 1, delta: float = 0, 
                     sobel_type: str = 'both', normalize: bool = False) -> np.ndarray:
         """
@@ -144,7 +154,6 @@ class EdgeDetector:
 
         return sobel_edges
 
-    @unused
     def export_edges(self, edges: np.ndarray) -> np.ndarray:
         """
         Returns only the detected edges with a no background as a numpy array.
@@ -169,7 +178,6 @@ class EdgeDetector:
 
         return rgba_image
 
-    @unused
     def skeletonize(self, binary_edges: np.ndarray) -> np.ndarray:
         """
         Thins edges using skeletonization.
@@ -211,7 +219,6 @@ class EdgeDetector:
 
         return skeleton
     
-    @unused
     def segment_foreground_background(self, image: np.ndarray, threshold: int = 100) -> tuple:
         """
         Segment the foreground and background using a threshold.

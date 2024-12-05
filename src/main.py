@@ -116,10 +116,16 @@ def detect_edges(load_dict: dict, color_zone_img):
     binary_canny_edges = edge_detector.export_edges(canny_edges)
     compare_images(canny_edges, binary_canny_edges, title1="Canny", title2="Binary Canny")
 
+    # Refine Edges
+    refined_canny_edges = edge_detector.refine_edges(canny_edges)
+    binary_refined = edge_detector.export_edges(refined_canny_edges)
+    plot_image(binary_refined)
+
+
+    # Overlay image with edges
     edge_img = edge_detector.overlay_edges(color_zone_img, canny_edges)
-    
-    # Plot image with edges
-    plot_image(edge_img, title="Image with Edges")
+    edge_img_refined = edge_detector.overlay_edges(color_zone_img, refined_canny_edges)
+    compare_images(edge_img, edge_img_refined, title1="Image with Edges", title2="Image with refined Edges")
     return edge_img
 
 # Main function that coordinates the entire process
