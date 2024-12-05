@@ -27,8 +27,7 @@ def load_image(image_path: str):
     return load_dict
 
 # Function to pre-process the image for better edge detection
-def pre_processing(load_dict: dict, blur_type: str = "gaussian"):
-    # EXTEND FUNCTIONS (STEPS 4 AND 5)
+def pre_processing(load_dict: dict):
     """
     Prepare the image for edge detection.
     - Step 1: Reduce the color space
@@ -46,16 +45,11 @@ def pre_processing(load_dict: dict, blur_type: str = "gaussian"):
     pre_processed_img = loaded_img
 
     # Step 1: Reduce the color space
-    pre_processed_img = pre_processor.cs_red_k1(pre_processed_img, 30)
+    pre_processed_img = pre_processor.initial_kmeans(pre_processed_img, 30)
     pre_processing_dict["color_reduced_img"] = pre_processed_img
 
     # Step 2: Apply blur
-    if blur_type.lower() == "median":
-        pre_processed_img = pre_processor.median_blur(pre_processed_img)
-    elif blur_type.lower() == "gaussian":
-        pre_processed_img = pre_processor.gaussian_blur(pre_processed_img)
-    else:
-        raise ValueError("Not a valid blur method. Choose (gaussian | median).")
+    pre_processed_img = pre_processor.gaussian_blur(pre_processed_img)
     pre_processing_dict["cr_blurred_img"] = pre_processed_img
 
     # compare_images(loaded_img, pre_processed_img)
@@ -84,47 +78,24 @@ def color_scheme(load_dict: dict, preprocess_img):
 
     # Refine color zones: Threshold with selected colors.
     for i in range(5):
-        selected_color = cs_creator.get_colors(color_zone_img)
-
-        # If no colors are selected (empty list), exit the loop early.
-        if len(selected_color) == 0:
-            break
-
-        color_zone_img = cs_creator.color_zones(color_zone_img, selected_color, 10)
-
+        color_zone_img = cs_creator.color_zones(color_zone_img, 10)
     color_images["ThresholdMerge"] = color_zone_img
     compare_images(color_images["PreProcess"], color_images["ThresholdMerge"])
 
     # Refine color zones: Color midpoint
     for i in range(3):
-        selected_color_1 = cs_creator.get_colors(color_zone_img)
-        selected_color_2 = cs_creator.get_colors(color_zone_img)
-
-        # Apply midpoint color within treshold
-        color_zone_img = cs_creator.midpoint_perceptual(color_zone_img, 
-                                                          selected_color_1, 
-                                                          selected_color_2, 2)
+        color_zone_img = cs_creator.midpoint_perceptual(color_zone_img, 2)
     color_images["MidPoint"] = color_zone_img
     plot_image(color_images["MidPoint"])
-
-
+ 
     # Refine color zones: Manual color replacement
     for i in range(1):
-        selected_color_1 = cs_creator.get_colors(color_zone_img)
-        selected_color_2 = cs_creator.get_colors(color_zone_img)
-        box_selection = cs_creator.box_select(color_zone_img)
-        color_zone_img = cs_creator.box_color_replacement(color_zone_img, selected_color_1, 
-                                                          selected_color_2, box_selection)
+        color_zone_img = cs_creator.box_color_replacement(color_zone_img)
     color_images["ManualReplacement"] = color_zone_img
     plot_image(color_images["ManualReplacement"])
 
     # Custom kmeans algorithm
-    kmeans_colors = []
-    for i in range(3):
-        kmeans_c = cs_creator.get_colors(color_zone_img)
-        kmeans_colors.append(kmeans_c)
-    color_zone_img = cs_creator.kmeans_color_replacement(color_zone_img, kmeans_colors, 10, 10)
-
+    color_zone_img = cs_creator.kmeans_color_replacement(color_zone_img, 10, 10)
     color_images["KMeans2"] = color_zone_img
     compare_images(color_images["ManualReplacement"], color_images["KMeans2"])
 
@@ -176,7 +147,7 @@ def start_application(image_path: str):
 # This ensures the app only runs when main.py is executed directly
 if __name__ == "__main__":
     # image_path = "C:/Victor/DrawByNumbers/TestImages/flowers_name_in_english.jpg"
-    # image_path = "C:\Victor\DrawByNumbers\TestImages\mickey-mouse-cinderella-castle-1024x683.jpg"
+    image_path = "C:\Victor\DrawByNumbers\TestImages\mickey-mouse-cinderella-castle-1024x683.jpg"
     # image_path = "C:/Victor/Photo & Video/Nadine/_DSC0283.jpg"
-    image_path = "C:/Victor/Photo & Video/Nadine//20240815_172047.jpg"
+    # image_path = "C:/Victor/Photo & Video/Nadine//20240815_172047.jpg"
     start_application(image_path)  # Run the app
