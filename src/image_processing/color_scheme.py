@@ -1,6 +1,28 @@
 """
-Applying color schemes to images. Assign a color to each region.
+This module provides a class `ColorSchemeCreator` for applying and refining color schemes to images. 
+It includes functionalities for color selection, color quantization, and applying perceptual color transformations to segmented regions.
+
+Key Features:
+- User-driven color selection from images.
+- Color zone refinement based on perceptual similarity in Lab color space.
+- Manual or automated color replacement within user-defined regions.
+- KMeans clustering for reducing color palette while preserving specific colors.
+
+Classes:
+- `ColorSchemeCreator`: A class for selecting, modifying, and applying color schemes to images.
+
+Methods:
+- `get_colors`: Lets the user select a color from the image.
+- `color_zones`: Refines color zones using a selected color.
+- `midpoint_perceptual`: Combines two colors by calculating their perceptual midpoint.
+- `box_select`: Allows interactive rectangular region selection.
+- `box_color_replacement`: Replaces colors in a defined rectangular region.
+- `kmeans_color_replacement`: Applies KMeans clustering for color quantization and selective color preservation.
+
+Dependencies:
+- OpenCV, numpy, scipy, scikit-learn, scikit-image, time
 """
+
 import cv2
 import numpy as np
 from scipy.spatial.distance import cdist
