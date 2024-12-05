@@ -89,7 +89,7 @@ def color_scheme(load_dict: dict, preprocess_img):
     plot_image(color_images["MidPoint"])
  
     # Refine color zones: Manual color replacement
-    for i in range(1):
+    for i in range(3):
         color_zone_img = cs_creator.box_color_replacement(color_zone_img)
     color_images["ManualReplacement"] = color_zone_img
     plot_image(color_images["ManualReplacement"])
@@ -114,7 +114,7 @@ def detect_edges(load_dict: dict, color_zone_img):
 
     # Export and visualize canny edges
     binary_canny_edges = edge_detector.export_edges(canny_edges)
-    # compare_images(canny_edges, binary_canny_edges, title1="Canny", title2="Binary Canny")
+    compare_images(canny_edges, binary_canny_edges, title1="Canny", title2="Binary Canny")
 
     edge_img = edge_detector.overlay_edges(color_zone_img, canny_edges)
     
@@ -132,15 +132,19 @@ def start_application(image_path: str):
     
     # Preprocessing
     print("Preprocessing")
-    pre_processing_dict = pre_processing(load_dict)
+    # pre_processing_dict = pre_processing(load_dict)
 
     # Applying color reduction and creating color scheme for 
     print("Creating Color Scheme")
-    color_zone_img = color_scheme(load_dict, pre_processing_dict["cr_blurred_img"])
+    # color_zone_img = color_scheme(load_dict, pre_processing_dict["cr_blurred_img"])
 
+    # TEMPORARY QUICKSTART
+    import cv2
+    color_zone_img = cv2.imread("C:\Victor\DrawByNumbers\TestOutput\MickeySuccess_1.png")
+    color_zone_img = cv2.cvtColor(color_zone_img, cv2.COLOR_BGR2RGB)
     # Perform edge detection and visualize results
     print("Detecting Edges")
-    # edge_img = detect_edges(load_dict, color_zone_img)
+    edge_img = detect_edges(load_dict, color_zone_img)
 
 
 
