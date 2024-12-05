@@ -21,13 +21,32 @@ class ColorSchemeCreator:
     # Pick color
     def get_colors(self, image: np.ndarray) -> tuple:
         """
-        Opens a window to allow the user to select a color by clicking on the image.
+        Allows the user to select a color from the input image by clicking on it.
+
+        Opens a window displaying the input image (resized if necessary) 
+        and lets the user click on a pixel to select its color. The selected color 
+        is returned as an RGB tuple.
 
         Parameters:
-        - image (np.ndarray): The input image (RGB).
+        - image (np.ndarray): Input image in RGB format.
 
         Returns:
-        - tuple: Selected color as (R, G, B).
+        - tuple: The selected color as (R, G, B).
+
+        Workflow:
+        1. Resizes the input image proportionally if its dimensions exceed a predefined maximum 
+        (default max dimension is 800 pixels).
+        2. Displays the resized image in an interactive OpenCV window.
+        3. Captures the color of the pixel clicked by the user and closes the window.
+
+        Notes:
+        - The function maps the clicked pixel coordinates from the resized image back to the 
+        original image to ensure accurate color selection.
+        - The selected color is printed to the console for reference.
+
+        Raises:
+        - No exceptions are explicitly raised, but if the user does not click a pixel before closing 
+        the window, an empty tuple will be returned.
         """
         selected_color = []
 
@@ -69,6 +88,36 @@ class ColorSchemeCreator:
     
     # Adapt color zones with 1 color
     def color_zones(self, image: np.ndarray, strength: int = 10) -> np.ndarray:
+        """
+        Refines color zones in the image by adapting areas near a selected color based on perceptual 
+        similarity in Lab color space.
+
+        This function smooths color zones by replacing pixels near a selected color with the exact 
+        selected color, based on a strength threshold that determines the perceptual similarity.
+
+        Parameters:
+        - image (np.ndarray): Input image in RGB format.
+        - strength (int, optional): Percentage threshold (0-100) for similarity to the selected color.
+        Higher values increase the range of pixels affected. Default is 10.
+
+        Returns:
+        - np.ndarray: Modified image with smoothed color zones in RGB format.
+
+        Process:
+        1. Prompts the user to select a color from the image.
+        2. Converts the selected color and the input image to Lab color space for perceptual calculations.
+        3. Calculates Euclidean distances between each pixel in the image and the selected color in Lab space.
+        4. Identifies pixels within the threshold distance to the selected color.
+        5. Replaces those pixels with the selected color in the output image.
+
+        Raises:
+        - ValueError: If no color is selected.
+
+        Notes:
+        - The strength parameter controls the sensitivity of the color replacement process. A lower 
+        strength value results in fewer pixels being replaced, while a higher value expands the range.
+        """
+        
         print("Threshold Refining")
         # Select Color
         selected_color = self.get_colors(image)
@@ -113,14 +162,32 @@ class ColorSchemeCreator:
     # Adapt color zones with 2 colors (perceptual)
     def midpoint_perceptual(self, image: np.ndarray, strength: int = 10) -> np.ndarray:
         """
-        Combines two colors perceptually by calculating their midpoint in Lab color space.
-        
+        Refines the image by combining two selected colors perceptually, replacing nearby pixels 
+        with their midpoint in Lab color space.
+
+        This function calculates the perceptual midpoint between two selected colors (c1, c2) in Lab 
+        space and modifies the image by replacing pixels near these colors with the calculated midpoint 
+        color, based on a strength threshold.
+
         Parameters:
-        - c1, c2: Tuples representing RGB colors (R, G, B).
-        
+        - image (np.ndarray): Input image in RGB format.
+        - strength (int, optional): Percentage threshold (0-100) determining the perceptual distance 
+        within which pixels are considered close to the selected colors. Default is 10.
+
         Returns:
-        - Tuple representing the midpoint color in RGB.
+        - np.ndarray: Modified image in RGB format with refined colors.
+
+        Process:
+        1. Converts the selected colors (c1, c2) from RGB to Lab color space.
+        2. Calculates their midpoint in Lab space and converts it back to RGB.
+        3. Converts the entire image to Lab space and computes perceptual distances to c1 and c2.
+        4. Identifies pixels within the threshold distance from either color.
+        5. Replaces matching pixels in the image with the perceptual midpoint color.
+        
+        Notes:
+        - The function ensures all modified pixel values remain within valid RGB range (0-255).
         """
+
         print("Midpoint Refining")
         c1 = self.get_colors(image)
         c2 = self.get_colors(image)
@@ -165,14 +232,24 @@ class ColorSchemeCreator:
     # Select Box For box_color_replacement
     def box_select(self, image: np.ndarray) -> tuple:
         """
-        Allows the user to draw a rectangle on the image and returns the rectangle's coordinates.
+        Enables the user to interactively select a rectangular region in the image by clicking and dragging with the mouse.
+
+        The user clicks and drags on the displayed image to define the rectangle's coordinates. The function then captures 
+        the top-left and bottom-right corners of the selected rectangle.
 
         Parameters:
-        - image (np.ndarray): Input image in RGB format.
+        - image (np.ndarray): Input image in RGB format, displayed for user interaction.
 
         Returns:
-        - tuple: ((x1, y1), (x2, y2)) coordinates of the rectangle.
+        - tuple: Coordinates of the selected rectangle in the format 
+        ((x1, y1), (x2, y2)), where:
+            - (x1, y1): Top-left corner.
+            - (x2, y2): Bottom-right corner.
+        
+        Raises:
+        - ValueError: If the rectangle is not properly defined (e.g., if the user fails to complete the rectangle).
         """
+
         print("Box Selection") 
         box_coords = []
 
@@ -202,17 +279,19 @@ class ColorSchemeCreator:
     # Refine color zones: Manual color replacement
     def box_color_replacement(self, image: np.ndarray, strength: int = 10) -> np.ndarray:
         """
-        Replaces color c1 with c2 inside a specified rectangular zone in the image.
+        Replace a selected color with another within a user-defined rectangular region.
+
+        This function allows the user to select a rectangular area in an image and replaces 
+        all pixels similar to a specified source color (`c1`) with a target color (`c2`) 
+        based on a perceptual similarity threshold.
 
         Parameters:
         - image (np.ndarray): Input image in RGB format.
-        - c1 (tuple): The original color (R, G, B) to be replaced.
-        - c2 (tuple): The target replacement color (R, G, B).
-        - rect (tuple): ((x1, y1), (x2, y2)) coordinates of the rectangle.
-        - strength (int): Threshold for similarity to c1 (in percentage).
+        - strength (int): Threshold for color similarity (0-100). Higher values allow a 
+        broader range of colors similar to `c1` to be replaced. (Default: 10)
 
         Returns:
-        - np.ndarray: Modified image with replacements applied inside the defined rectangle.
+        - np.ndarray: The modified image with the selected color replaced within the specified rectangle.
         """
         print("Box Color Replacement") 
         c1 = self.get_colors(image)
@@ -249,6 +328,23 @@ class ColorSchemeCreator:
     
     # Custom kmeans algorithm
     def kmeans_color_replacement(self, image: np.ndarray, strength: int = 10, n_colors: int = 10) -> np.ndarray:
+        """
+        Replace colors in an image using KMeans clustering with selective color preservation.
+
+        This method applies KMeans clustering to reduce the color palette of the image, 
+        while preserving regions close to specific selected colors based on perceptual 
+        similarity in the Lab color space.
+
+        Parameters:
+        - image (np.ndarray): Input image in RGB format.
+        - strength (int): Threshold strength (0-100) for preserving colors based on Lab 
+        perceptual distance. Higher values preserve more colors. (Default: 10)
+        - n_colors (int): Number of clusters for KMeans quantization. (Default: 10)
+
+        Returns:
+        - np.ndarray: The resulting image with reduced color space and preserved regions.
+        """
+
         print("Custom Kmeans")
         kmeans_colors = []
         for i in range(3):
