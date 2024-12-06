@@ -26,7 +26,7 @@ Dependencies:
 import cv2
 import numpy as np
 from scipy.spatial.distance import cdist
-from sklearn.cluster import MiniBatchKMeans
+from sklearn.cluster import KMeans
 from skimage.color import rgb2lab, lab2rgb
 import time
 
@@ -404,9 +404,10 @@ class ColorSchemeCreator:
         image_flat = image.reshape((-1, 3))
 
         # Perform K-Means clustering
-        kmeans = MiniBatchKMeans(n_clusters=n_colors, random_state=42)
+        kmeans = KMeans(n_clusters=n_colors, random_state=42)
         kmeans.fit(image_flat)
-        clustered_flat = kmeans.cluster_centers_[kmeans.labels_].astype(np.uint8)
+        labels = kmeans.labels_.reshape(image.shape[:2])
+        clustered_flat = kmeans.cluster_centers_[labels].astype(np.uint8)
 
         # Reshape back to image dimensions
         clustered_image = clustered_flat.reshape(image.shape)
@@ -415,4 +416,4 @@ class ColorSchemeCreator:
         for mask, region in zip(masks, saved_regions):
             clustered_image[mask] = region
 
-        return clustered_image
+        return clustered_image, labels
