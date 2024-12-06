@@ -19,7 +19,7 @@ def plot_image(image: np.ndarray, title: str = "Image", cmap: str = None) -> Non
     # Default to grayscale if single-channel
     if cmap is None and len(image.shape) == 2:
         cmap = 'gray'
-    
+
     # Plot image
     plt.figure()
     plt.imshow(image, cmap=cmap)
@@ -115,3 +115,15 @@ def compare_images(image1: np.ndarray, image2: np.ndarray, image3: np.ndarray = 
 
     plt.tight_layout()
     plt.show()
+
+def resize_image(image: np.ndarray, increase: int = 10) -> np.ndarray:
+    height, width = image.shape[:2]
+    new_height = height + (increase / 100) * height
+    new_width = width + (increase / 100) * width
+    new_dim = (int(new_width), int(new_height))
+    resized = cv2.resize(image, new_dim)
+    return resized
+
+def blur_image(image: np.ndarray, kernel_size: int = 5) -> np.ndarray:
+    blurred_image =  cv2.GaussianBlur(image, (kernel_size, kernel_size), 0)
+    return blurred_image
