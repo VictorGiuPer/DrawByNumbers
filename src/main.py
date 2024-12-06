@@ -1,4 +1,4 @@
-from plot_utils import plot_image, compare_images, plot_image_3d
+from tools import plot_image, compare_images, plot_image_3d, resize_image, blur_image
 from image_processing.load import ImageProcessor
 from image_processing.pre_processing import Preprocessor
 from image_processing.edge_detector import EdgeDetector
@@ -95,7 +95,7 @@ def color_scheme(load_dict: dict, preprocess_img):
     plot_image(color_images["ManualReplacement"])
 
     # Custom kmeans algorithm
-    color_zone_img = cs_creator.kmeans_color_replacement(color_zone_img, 10, 10)
+    color_zone_img, color_labels = cs_creator.kmeans_color_replacement(color_zone_img, 10, 10)
     color_images["KMeans2"] = color_zone_img
     compare_images(color_images["ManualReplacement"], color_images["KMeans2"])
 
@@ -107,7 +107,13 @@ def detect_edges(load_dict: dict, color_zone_img):
     Performs edge detection using Sobel and other methods, then compares the results.
     """
     edge_detector = EdgeDetector()
+
+    # Resize Image
+    color_zone_img = resize_image(color_zone_img)
     
+    # Blur Image
+    color_zone_img = blur_image(color_zone_img, 5)
+
     # Apply Canny edge detection
     canny_edges = edge_detector.canny_edges(color_zone_img, 
                                             min_val=10, max_val=40)
@@ -125,7 +131,8 @@ def detect_edges(load_dict: dict, color_zone_img):
     # Overlay image with edges
     edge_img = edge_detector.overlay_edges(color_zone_img, canny_edges)
     edge_img_refined = edge_detector.overlay_edges(color_zone_img, refined_canny_edges)
-    compare_images(edge_img, edge_img_refined, title1="Image with Edges", title2="Image with refined Edges")
+    plot_image(edge_img_refined)
+    # compare_images(edge_img, edge_img_refined, title1="Image with Edges", title2="Image with refined Edges")
     return edge_img
 
 # Main function that coordinates the entire process
@@ -138,20 +145,20 @@ def start_application(image_path: str):
     
     # Preprocessing
     print("Preprocessing")
-    # pre_processing_dict = pre_processing(load_dict)
+    pre_processing_dict = pre_processing(load_dict)
 
     # Applying color reduction and creating color scheme for 
     print("Creating Color Scheme")
-    # color_zone_img = color_scheme(load_dict, pre_processing_dict["cr_blurred_img"])
+    color_zone_img = color_scheme(load_dict, pre_processing_dict["cr_blurred_img"])
 
     # TEMPORARY QUICKSTART
     import cv2
-    color_zone_img = cv2.imread("C:\Victor\DrawByNumbers\TestOutput\MickeySuccess_1.png")
-    color_zone_img = cv2.cvtColor(color_zone_img, cv2.COLOR_BGR2RGB)
+    # color_zone_img = cv2.imread("C:\Victor\DrawByNumbers\TestOutput\MickeySuccess_1.png")
+    # color_zone_img = cv2.imread("C:\Victor\DrawByNumbers\TestOutput\\NadineSuccess_1.png")
+    # color_zone_img = cv2.cvtColor(color_zone_img, cv2.COLOR_BGR2RGB)
     # Perform edge detection and visualize results
     print("Detecting Edges")
     edge_img = detect_edges(load_dict, color_zone_img)
-
 
 
 # This ensures the app only runs when main.py is executed directly
