@@ -49,7 +49,7 @@ def pre_processing(load_dict: dict):
     pre_processing_dict["color_reduced_img"] = pre_processed_img
 
     # Step 2: Apply blur
-    pre_processed_img = pre_processor.gaussian_blur(pre_processed_img)
+    pre_processed_img = pre_processor.gaussian_blur(pre_processed_img, 7)
     pre_processing_dict["cr_blurred_img"] = pre_processed_img
 
     # compare_images(loaded_img, pre_processed_img)
@@ -77,7 +77,7 @@ def color_scheme(load_dict: dict, preprocess_img):
     color_images["PreProcess"] = color_zone_img
 
     # Refine color zones: Threshold with selected colors.
-    for i in range(5):
+    for i in range(7):
         color_zone_img = cs_creator.color_zones(color_zone_img, 10)
     color_images["ThresholdMerge"] = color_zone_img
     compare_images(color_images["PreProcess"], color_images["ThresholdMerge"])
@@ -95,9 +95,17 @@ def color_scheme(load_dict: dict, preprocess_img):
     plot_image(color_images["ManualReplacement"])
 
     # Custom kmeans algorithm
-    color_zone_img, color_labels = cs_creator.kmeans_color_replacement(color_zone_img, 10, 10)
+    color_zone_img = cs_creator.kmeans_color_replacement(color_zone_img, 10, 10)
     color_images["KMeans2"] = color_zone_img
     compare_images(color_images["ManualReplacement"], color_images["KMeans2"])
+
+    # Recompute clusters and centers
+    centers, labels = cs_creator.clusters_and_centers(color_zone_img)
+
+    # Facet Pruning
+    """ color_zone_img = cs_creator.color_facet_pruning(color_zone_img, labels, centers, 100)
+    color_images["FacetPruning"] = color_zone_img
+    plot_image(color_zone_img) """
 
     return color_zone_img
 
@@ -112,7 +120,7 @@ def detect_edges(load_dict: dict, color_zone_img):
     color_zone_img = resize_image(color_zone_img)
     
     # Blur Image
-    color_zone_img = blur_image(color_zone_img, 5)
+    color_zone_img = blur_image(color_zone_img, 7)
 
     # Apply Canny edge detection
     canny_edges = edge_detector.canny_edges(color_zone_img, 
@@ -163,8 +171,8 @@ def start_application(image_path: str):
 
 # This ensures the app only runs when main.py is executed directly
 if __name__ == "__main__":
-    # image_path = "C:/Victor/DrawByNumbers/TestImages/flowers_name_in_english.jpg"
-    image_path = "C:\Victor\DrawByNumbers\TestImages\mickey-mouse-cinderella-castle-1024x683.jpg"
+    # image_path = "C:\Victor\Photo & Video\\2024_06_Italy\P1122131.JPG"
+    # image_path = "C:\Victor\DrawByNumbers\TestImages\mickey-mouse-cinderella-castle-1024x683.jpg"
     # image_path = "C:/Victor/Photo & Video/Nadine/_DSC0283.jpg"
-    # image_path = "C:/Victor/Photo & Video/Nadine//20240815_172047.jpg"
+    image_path = "C:/Victor/Photo & Video/Nadine//20240815_172047.jpg"
     start_application(image_path)  # Run the app
