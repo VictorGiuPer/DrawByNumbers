@@ -37,7 +37,7 @@ class EdgeDetector:
 
     # Generate Edges (Canny Algorithm)
     def canny_edges(self, image: np.ndarray, min_val: int = 50, max_val: int = 150, 
-                    blur_kernel_size: int = 9, aperture_size: int = 3, L2gradient: bool = False) -> np.ndarray:
+                    blur_kernel_size: int = 7, aperture_size: int = 3, L2gradient: bool = False) -> np.ndarray:
         """
         Detect edges in the image using the Canny algorithm with optional preprocessing.
 
