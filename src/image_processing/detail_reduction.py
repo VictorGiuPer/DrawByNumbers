@@ -10,7 +10,9 @@ class DetailReductor:
         - image (np.ndarray): The input image in BGR format.
         """
         pass
-    def brush_paint_merge(self, image: np.ndarray, brush_size: int = 100) -> np.ndarray:
+    
+    # WORKS BUT WRONG SIZE
+    def brush_paint_merge(self, image: np.ndarray, brush_size: int = 10) -> np.ndarray:
         """
         Allows the user to paint over an image with a selected color, merging regions as they paint.
 
@@ -29,14 +31,14 @@ class DetailReductor:
             nonlocal selected_color, painted_image
             if event == cv2.EVENT_LBUTTONDOWN:  # Left mouse button click
                 selected_color = image[y, x]  # Capture the color under the brush
-                selected_color = tuple(selected_color)
+                selected_color = tuple(map(int, selected_color))  # Convert np.uint8 to int
             print("Selected Color:", selected_color)
             print("Type of selected_color:", type(selected_color))
 
 
             if event == cv2.EVENT_MOUSEMOVE and (flags & cv2.EVENT_LBUTTONDOWN):
                 # Draw a circle (or any shape) with the selected color
-                cv2.circle(painted_image, (x, y), brush_size, tuple(selected_color), -1)
+                cv2.circle(painted_image, (x, y), brush_size, selected_color, -1)
 
             # Show the current state of the image
             cv2.imshow("Paint with Brush", painted_image)
@@ -51,6 +53,8 @@ class DetailReductor:
 
         return painted_image
     
+
+    # NOT WORKING
     def box_select(self, image: np.ndarray) -> tuple:
         """
         Enables the user to interactively select a rectangular region in the image by clicking and dragging with the mouse.
