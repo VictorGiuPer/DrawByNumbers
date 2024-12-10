@@ -100,26 +100,26 @@ def color_scheme(load_dict: dict, preprocess_img):
     color_images["KMeans2"] = color_zone_img
     compare_images(color_images["ManualReplacement"], color_images["KMeans2"])
 
-    # Brush Merging
-    color_zone_img = cs_creator.brush_paint_merge(color_zone_img, 10)
-    plot_image(color_zone_img)
-
-    # Recompute clusters and centers
-    # centers, labels = cs_creator.clusters_and_centers(color_zone_img)
-
     # Facet Pruning
-    """ color_zone_img = cs_creator.color_facet_pruning(color_zone_img, labels, centers, 100)
+    """ Recompute clusters and centers
+    # centers, labels = cs_creator.clusters_and_centers(color_zone_img)
+    color_zone_img = cs_creator.color_facet_pruning(color_zone_img, labels, centers, 100)
     color_images["FacetPruning"] = color_zone_img
     plot_image(color_zone_img) """
 
     return color_zone_img
 
-""" def reduce_detail(color_zone_img):
-    
+def reduce_detail(color_zone_img):
+
+    detail_reductor = DetailReductor()
+    # Brush Merging
+    color_zone_img = detail_reductor.brush_paint_merge(color_zone_img, 10)
+    plot_image(color_zone_img)
+    """
     detail_reductor = DetailReductor()
     reduce_detail_img = detail_reductor.zone_merge(color_zone_img)
 
-    return reduce_detail_img """
+    return reduce_detail_img  """
 
 # Function to perform edge detection and comparison
 def detect_edges(load_dict: dict, color_zone_img):
@@ -147,7 +147,6 @@ def detect_edges(load_dict: dict, color_zone_img):
     binary_refined = edge_detector.export_edges(refined_canny_edges)
     plot_image(binary_refined)
 
-
     # Overlay image with edges
     edge_img = edge_detector.overlay_edges(color_zone_img, canny_edges)
     edge_img_refined = edge_detector.overlay_edges(color_zone_img, refined_canny_edges)
@@ -169,13 +168,14 @@ def start_application(image_path: str):
 
     # Applying color reduction and creating color scheme for 
     print("Creating Color Scheme")
-    
-    import cv2
-    new_load = cv2.imread("C:\Victor\DrawByNumbers\TestOutput\\NadineSuccess_2.png")
-    pre_processing_dict = {}
-    pre_processing_dict["cr_blurred_img"] = cv2.cvtColor(new_load, cv2.COLOR_BGR2RGB)
+    # color_zone_img = color_scheme(load_dict, pre_processing_dict["cr_blurred_img"])
 
-    color_zone_img = color_scheme(load_dict, pre_processing_dict["cr_blurred_img"])
+    import cv2
+    new_load = cv2.imread("C:\Victor\DrawByNumbers\TestOutput\FURTHER_REDUCTION_NADINE_COMO.png")
+    color_zone_img = cv2.cvtColor(new_load, cv2.COLOR_BGR2RGB)
+
+    # Reducing Detail
+    # reduced_detail_img = reduce_detail(color_zone_img)
 
     print("Detecting Edges")
     edge_img = detect_edges(load_dict, color_zone_img)
