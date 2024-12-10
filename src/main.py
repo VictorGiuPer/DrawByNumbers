@@ -159,11 +159,6 @@ def start_application(image_path: str):
     print("Creating Color Scheme")
     color_zone_img = color_scheme(load_dict, pre_processing_dict["cr_blurred_img"])
 
-    # TEMPORARY QUICKSTART
-    import cv2
-    # color_zone_img = cv2.imread("C:\Victor\DrawByNumbers\TestOutput\MickeySuccess_1.png")
-    # color_zone_img = cv2.imread("C:\Victor\DrawByNumbers\TestOutput\\NadineSuccess_1.png")
-    # color_zone_img = cv2.cvtColor(color_zone_img, cv2.COLOR_BGR2RGB)
     # Perform edge detection and visualize results
     print("Detecting Edges")
     edge_img = detect_edges(load_dict, color_zone_img)
@@ -173,6 +168,8 @@ def start_application(image_path: str):
 if __name__ == "__main__":
     # image_path = "C:\Victor\Photo & Video\\2024_06_Italy\P1122131.JPG"
     # image_path = "C:\Victor\DrawByNumbers\TestImages\mickey-mouse-cinderella-castle-1024x683.jpg"
-    # image_path = "C:/Victor/Photo & Video/Nadine/_DSC0283.jpg"
-    image_path = "C:/Victor/Photo & Video/Nadine//20240815_172047.jpg"
+    image_path = "C:/Victor/Photo & Video/Nadine/_DSC0283.jpg"
+    # image_path = "C:/Victor/Photo & Video/Nadine//20240815_172047.jpg"
+    # image_path = "C:\Victor\Photo & Video\\Nadine\P1132388.JPG"
+    # image_path = "C:\Victor\Photo & Video\\Nadine\IMG-20240721-WA0009.jpg"
     start_application(image_path)  # Run the app
