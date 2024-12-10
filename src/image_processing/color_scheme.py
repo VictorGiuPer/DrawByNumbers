@@ -419,6 +419,43 @@ class ColorSchemeCreator:
             clustered_image[mask] = region
 
         return clustered_image
+    
+    def brush_paint_merge(self, image: np.ndarray, brush_size: int = 20) -> np.ndarray:
+        """
+        Allows the user to paint over an image with a selected color, merging regions as they paint.
+
+        Parameters:
+        - image (np.ndarray): The input image in RGB format.
+        - brush_size (int, optional): The size of the brush (default is 20).
+
+        Returns:
+        - np.ndarray: The modified image with painted regions.
+        """
+        painted_image = image.copy()
+
+        selected_color = []
+
+        def mouse_callback(event, x, y, flags, param):
+            nonlocal selected_color, painted_image
+            if event == cv2.EVENT_LBUTTONDOWN:  # Left mouse button click
+                selected_color = image[y, x]  # Capture the color under the brush
+
+            if event == cv2.EVENT_MOUSEMOVE and (flags & cv2.EVENT_LBUTTONDOWN):
+                # Draw a circle (or any shape) with the selected color
+                cv2.circle(painted_image, (x, y), brush_size, tuple(reversed(selected_color)), -1)
+
+            # Show the current state of the image
+            cv2.imshow("Paint with Brush", painted_image)
+
+        # Create a window and set the mouse callback
+        cv2.imshow("Paint with Brush", painted_image)
+        cv2.setMouseCallback("Paint with Brush", mouse_callback)
+
+        # Wait for a key press (press 'Esc' to exit)
+        cv2.waitKey(0)
+        cv2.destroyAllWindows()
+
+        return painted_image
 
     def clusters_and_centers(self, image: np.ndarray, n_colors: int = 10, n_colors_select: int = 3):
         """

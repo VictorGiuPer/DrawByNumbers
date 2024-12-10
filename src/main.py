@@ -3,6 +3,7 @@ from image_processing.load import ImageProcessor
 from image_processing.pre_processing import Preprocessor
 from image_processing.edge_detector import EdgeDetector
 from image_processing.color_scheme import ColorSchemeCreator
+from image_processing.detail_reduction import DetailReductor
 
 # Function to load and process the image
 def load_image(image_path: str):
@@ -99,8 +100,12 @@ def color_scheme(load_dict: dict, preprocess_img):
     color_images["KMeans2"] = color_zone_img
     compare_images(color_images["ManualReplacement"], color_images["KMeans2"])
 
+    # Brush Merging
+    color_zone_img = cs_creator.brush_paint_merge(color_zone_img, 10)
+    plot_image(color_zone_img)
+
     # Recompute clusters and centers
-    centers, labels = cs_creator.clusters_and_centers(color_zone_img)
+    # centers, labels = cs_creator.clusters_and_centers(color_zone_img)
 
     # Facet Pruning
     """ color_zone_img = cs_creator.color_facet_pruning(color_zone_img, labels, centers, 100)
@@ -108,6 +113,13 @@ def color_scheme(load_dict: dict, preprocess_img):
     plot_image(color_zone_img) """
 
     return color_zone_img
+
+""" def reduce_detail(color_zone_img):
+    
+    detail_reductor = DetailReductor()
+    reduce_detail_img = detail_reductor.zone_merge(color_zone_img)
+
+    return reduce_detail_img """
 
 # Function to perform edge detection and comparison
 def detect_edges(load_dict: dict, color_zone_img):
@@ -153,13 +165,18 @@ def start_application(image_path: str):
     
     # Preprocessing
     print("Preprocessing")
-    pre_processing_dict = pre_processing(load_dict)
+    # pre_processing_dict = pre_processing(load_dict)
 
     # Applying color reduction and creating color scheme for 
     print("Creating Color Scheme")
+    
+    import cv2
+    new_load = cv2.imread("C:\Victor\DrawByNumbers\TestOutput\\NadineSuccess_2.png")
+    pre_processing_dict = {}
+    pre_processing_dict["cr_blurred_img"] = cv2.cvtColor(new_load, cv2.COLOR_BGR2RGB)
+
     color_zone_img = color_scheme(load_dict, pre_processing_dict["cr_blurred_img"])
 
-    # Perform edge detection and visualize results
     print("Detecting Edges")
     edge_img = detect_edges(load_dict, color_zone_img)
 
