@@ -419,3 +419,93 @@ class ColorSchemeCreator:
             clustered_image[mask] = region
 
         return clustered_image
+    
+    def clusters_and_centers(self, image: np.ndarray, n_colors: int = 10, n_colors_select: int = 3):
+        """
+        Recalculate the cluster centers and labels after manually adding new colors.
+        This method will cluster the image into a fixed number of colors using KMeans.
+
+        Parameters:
+        - image (np.ndarray): The image with manually added colors.
+        - n_colors (int): The number of clusters you want.
+        - n_colors_select (int): The number of colors retained prior.
+
+        Returns:
+        - centers (np.ndarray): The new cluster centers.
+        - labels (np.ndarray): The labels for each pixel indicating which cluster it belongs to.
+        """
+        # Reshape image to a list of pixels (each pixel is an RGB value)
+        # Step 1: Flatten the image to create a list of pixels (RGB values)
+        image_flat = image.reshape((-1, 3))
+
+        # Step 2: Apply KMeans clustering to reduce the color palette
+        kmeans = KMeans(n_clusters = n_colors + n_colors_select, random_state=42)
+        kmeans.fit(image_flat)
+
+        # Step 3: Get the cluster labels (which color each pixel belongs to)
+        labels = kmeans.labels_.reshape(image.shape[:2])
+
+        # Step 4: The cluster centers are the new representative colors
+        centers = kmeans.cluster_centers_
+
+        # Convert to uint8 (since cluster centers are float values)
+        centers = np.round(centers).astype(np.uint8)
+
+        print(f"Number of clusters: {len(centers)}")
+        print(f"Cluster centers:\n{centers}")
+
+        return centers, labels
+
+    def color_facet_pruning(self, image: np.ndarray, labels: np.ndarray, cluster_centers: np.ndarray, min_size: int = 100) -> np.ndarray:
+        """
+        Perform facet pruning directly on the original image using segmentation labels.
+
+        Parameters:
+        - image (np.ndarray): Original image (RGB).
+        - labels (np.ndarray): 2D array of cluster labels for each pixel.
+        - cluster_centers (np.ndarray): Cluster center colors from K-Means.
+        - min_size (int): Minimum facet size to retain.
+
+        Returns:
+        - pruned_image (np.ndarray): Original image with pruned facets.
+        """
+        print("Facet Pruning")
+        # Step 1: Copy labels to modify during pruning
+        pruned_labels = labels.copy()
+
+        # Step 2: Perform connected component analysis on the labels
+        unique_labels = np.unique(labels)
+        h, w = labels.shape
+        for label in unique_labels:
+            # Create a binary mask for the current label
+            mask = (labels == label).astype(np.uint8)
+
+            # Find connected components
+            num_components, components = cv2.connectedComponents(mask)
+
+            # Iterate through each component
+            for component in range(1, num_components):  # Ignore background (0)
+                # Get the size of the component
+                component_mask = (components == component)
+                component_size = np.sum(component_mask)
+
+                # If the component is too small, reassign it
+                if component_size < min_size:
+                    # Find the neighboring labels for the small region
+                    dilated = cv2.dilate(component_mask.astype(np.uint8), np.ones((3, 3), np.uint8), iterations=1)
+                    neighbor_mask = dilated & ~component_mask
+                    neighbor_labels = labels[neighbor_mask]
+
+                    # Ensure neighbor_labels is 1D
+                    neighbor_labels = neighbor_labels.flatten()
+
+                    # Check if there are valid neighbor labels
+                    if neighbor_labels.size > 0:
+                        # Reassign to the most common neighboring label
+                        new_label = np.bincount(neighbor_labels).argmax()
+                        pruned_labels[component_mask] = new_label
+
+        # Step 3: Map the refined labels back to the original colors
+        pruned_image = cluster_centers[pruned_labels].astype(np.uint8)
+
+        return pruned_image
