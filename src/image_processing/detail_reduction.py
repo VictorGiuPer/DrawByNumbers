@@ -1,5 +1,6 @@
 import cv2
 import numpy as np
+from sklearn.cluster import KMeans
 
 class DetailReductor:
     def __init__(self):
@@ -24,36 +25,144 @@ class DetailReductor:
         - np.ndarray: The modified image with painted regions.
         """
         painted_image = image.copy()
-
         selected_color = []
+        brush_size = 20
+
+        # Scale factor for the display window
+        scale_factor = 0.8  # Scale the window to 80% of the original size
+
+        # Resize the image for the display window
+        height, width = image.shape[:2]
+        scaled_width = int(width * scale_factor)
+        scaled_height = int(height * scale_factor)
+        scaled_image = cv2.resize(image, (scaled_width, scaled_height))
+        scaled_painted_image = cv2.resize(painted_image, (scaled_width, scaled_height))
 
         def mouse_callback(event, x, y, flags, param):
-            nonlocal selected_color, painted_image
-            if event == cv2.EVENT_LBUTTONDOWN:  # Left mouse button click
-                selected_color = image[y, x]  # Capture the color under the brush
-                selected_color = tuple(map(int, selected_color))  # Convert np.uint8 to int
-            print("Selected Color:", selected_color)
-            print("Type of selected_color:", type(selected_color))
+            nonlocal selected_color, scaled_painted_image
 
+            # Map scaled coordinates to original image coordinates
+            orig_x = int(x / scale_factor)
+            orig_y = int(y / scale_factor)
+
+            if event == cv2.EVENT_LBUTTONDOWN:  # Left mouse button click
+                if 0 <= orig_x < width and 0 <= orig_y < height:
+                    selected_color = image[orig_y, orig_x]  # Capture color from the original image
+                    selected_color = tuple(map(int, selected_color))  # Convert np.uint8 to int
+                    print("Selected Color:", selected_color)
+                    print("Type of selected_color:", type(selected_color))
 
             if event == cv2.EVENT_MOUSEMOVE and (flags & cv2.EVENT_LBUTTONDOWN):
-                # Draw a circle (or any shape) with the selected color
-                cv2.circle(painted_image, (x, y), brush_size, selected_color, -1)
+                if 0 <= orig_x < width and 0 <= orig_y < height:
+                    # Paint on the scaled image
+                    cv2.circle(scaled_painted_image, (x, y), int(brush_size * scale_factor), selected_color, -1)
 
-            # Show the current state of the image
-            cv2.imshow("Paint with Brush", painted_image)
+            # Show the current state of the scaled painted image
+            cv2.imshow("Paint with Brush", scaled_painted_image)
 
         # Create a window and set the mouse callback
-        cv2.imshow("Paint with Brush", painted_image)
+        cv2.imshow("Paint with Brush", scaled_painted_image)
         cv2.setMouseCallback("Paint with Brush", mouse_callback)
 
         # Wait for a key press (press 'Esc' to exit)
         cv2.waitKey(0)
         cv2.destroyAllWindows()
 
+        # Resize the painted image back to the original size for further processing
+        painted_image = cv2.resize(scaled_painted_image, (width, height))
+
         return painted_image
     
+    # Get Clusters and Centers for Facet Pruning
+    def clusters_and_centers(self, image: np.ndarray, n_colors: int = 10, n_colors_select: int = 3):
+        """
+        Recalculate the cluster centers and labels after manually adding new colors.
+        This method will cluster the image into a fixed number of colors using KMeans.
 
+        Parameters:
+        - image (np.ndarray): The image with manually added colors.
+        - n_colors (int): The number of clusters you want.
+        - n_colors_select (int): The number of colors retained prior.
+
+        Returns:
+        - centers (np.ndarray): The new cluster centers.
+        - labels (np.ndarray): The labels for each pixel indicating which cluster it belongs to.
+        """
+        # Reshape image to a list of pixels (each pixel is an RGB value)
+        # Step 1: Flatten the image to create a list of pixels (RGB values)
+        image_flat = image.reshape((-1, 3))
+
+        # Step 2: Apply KMeans clustering to reduce the color palette
+        kmeans = KMeans(n_clusters = n_colors + n_colors_select, random_state=42)
+        kmeans.fit(image_flat)
+
+        # Step 3: Get the cluster labels (which color each pixel belongs to)
+        labels = kmeans.labels_.reshape(image.shape[:2])
+
+        # Step 4: The cluster centers are the new representative colors
+        centers = kmeans.cluster_centers_
+
+        # Convert to uint8 (since cluster centers are float values)
+        centers = np.round(centers).astype(np.uint8)
+
+        print(f"Number of clusters: {len(centers)}")
+        print(f"Cluster centers:\n{centers}")
+
+        return centers, labels
+
+    def color_facet_pruning(self, image: np.ndarray, labels: np.ndarray, cluster_centers: np.ndarray, min_size: int = 100) -> np.ndarray:
+        """
+        Perform facet pruning directly on the original image using segmentation labels.
+
+        Parameters:
+        - image (np.ndarray): Original image (RGB).
+        - labels (np.ndarray): 2D array of cluster labels for each pixel.
+        - cluster_centers (np.ndarray): Cluster center colors from K-Means.
+        - min_size (int): Minimum facet size to retain.
+
+        Returns:
+        - pruned_image (np.ndarray): Original image with pruned facets.
+        """
+        print("Facet Pruning")
+        # Step 1: Copy labels to modify during pruning
+        pruned_labels = labels.copy()
+        # Step 2: Perform connected component analysis on the labels
+        unique_labels = np.unique(labels)
+        h, w = labels.shape
+        for label in unique_labels:
+            # Create a binary mask for the current label
+            mask = (labels == label).astype(np.uint8)
+
+            # Find connected components
+            num_components, components = cv2.connectedComponents(mask)
+
+            # Iterate through each component
+            for component in range(1, num_components):  # Ignore background (0)
+                # Get the size of the component
+                component_mask = (components == component)
+                component_size = np.sum(component_mask)
+
+                # If the component is too small, reassign it
+                if component_size < min_size:
+                    # Find the neighboring labels for the small region
+                    dilated = cv2.dilate(component_mask.astype(np.uint8), np.ones((3, 3), np.uint8), iterations=1)
+                    neighbor_mask = dilated & ~component_mask
+                    neighbor_labels = labels[neighbor_mask]
+
+                    # Ensure neighbor_labels is 1D
+                    neighbor_labels = neighbor_labels.flatten()
+
+                    # Check if there are valid neighbor labels
+                    if neighbor_labels.size > 0:
+                        # Reassign to the most common neighboring label
+                        new_label = np.bincount(neighbor_labels).argmax()
+                        pruned_labels[component_mask] = new_label
+
+        # Step 3: Map the refined labels back to the original colors
+        pruned_image = cluster_centers[pruned_labels].astype(np.uint8)
+
+        return pruned_image
+    
     # NOT WORKING
     def box_select(self, image: np.ndarray) -> tuple:
         """

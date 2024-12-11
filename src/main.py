@@ -77,6 +77,12 @@ def color_scheme(load_dict: dict, preprocess_img):
     color_zone_img = preprocess_img
     color_images["PreProcess"] = color_zone_img
 
+    rd = DetailReductor()
+
+    centers = rd.clusters_and_centers(color_zone_img, n_colors=20)
+    facet = rd.color_facet_pruning(color_zone_img, )
+
+
     # Refine color zones: Threshold with selected colors.
     for i in range(7):
         color_zone_img = cs_creator.color_zones(color_zone_img, 10)
@@ -100,21 +106,21 @@ def color_scheme(load_dict: dict, preprocess_img):
     color_images["KMeans2"] = color_zone_img
     compare_images(color_images["ManualReplacement"], color_images["KMeans2"])
 
-    # Facet Pruning
-    """ Recompute clusters and centers
-    # centers, labels = cs_creator.clusters_and_centers(color_zone_img)
-    color_zone_img = cs_creator.color_facet_pruning(color_zone_img, labels, centers, 100)
-    color_images["FacetPruning"] = color_zone_img
-    plot_image(color_zone_img) """
-
     return color_zone_img
 
+# Function to reduce the detail in the image
 def reduce_detail(color_zone_img):
 
     detail_reductor = DetailReductor()
     # Brush Merging
-    color_zone_img = detail_reductor.brush_paint_merge(color_zone_img, 10)
+    color_zone_img = detail_reductor.brush_paint_merge(color_zone_img, 1)
     plot_image(color_zone_img)
+
+    # Facet Pruning
+    # Recompute clusters and centers
+    centers, labels = detail_reductor.clusters_and_centers(color_zone_img)
+    color_zone_img = detail_reductor.color_facet_pruning(color_zone_img, labels, centers, 100)
+    plot_image(color_zone_img) 
     """
     detail_reductor = DetailReductor()
     reduce_detail_img = detail_reductor.zone_merge(color_zone_img)
@@ -175,10 +181,10 @@ def start_application(image_path: str):
     color_zone_img = cv2.cvtColor(new_load, cv2.COLOR_BGR2RGB)
 
     # Reducing Detail
-    # reduced_detail_img = reduce_detail(color_zone_img)
+    reduced_detail_img = reduce_detail(color_zone_img)
 
     print("Detecting Edges")
-    edge_img = detect_edges(load_dict, color_zone_img)
+    # edge_img = detect_edges(load_dict, color_zone_img)
 
 
 # This ensures the app only runs when main.py is executed directly
