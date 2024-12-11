@@ -193,6 +193,7 @@ def start_application(image_path: str):
     segmented_image = segment_borders(edge_image, contours)
     plot_image(segmented_image)  # Display the segmented image
 
+    # WORK IN PROGRESS
     clustered_image_2 = kmeans_clustering(pruned_image)
     print("Label Placement")
     labeled_image = place_labels(segmented_image, clustered_image_2, scale_factor=1.5)
