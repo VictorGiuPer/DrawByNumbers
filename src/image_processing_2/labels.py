@@ -1,5 +1,6 @@
 import numpy as np
 import cv2
+from sklearn.cluster import KMeans
 
 
 
@@ -7,82 +8,93 @@ class Labels():
     def __init__(self):
         pass
 
-    def white_canvas(self, image: np.ndarray, scale_factor: float):
-        # Get original image dimensions
-        height, width = image.shape[:2]
-
-        # Scale dimensions
-        enlarged_width = int(width * scale_factor)
-        enlarged_height = int(height * scale_factor)
-
-        # Create a blank white canvas
-        canvas = np.ones((enlarged_height, enlarged_width, 3), dtype=np.uint8) * 255
-        return canvas
-
-    def color_label_map(self, clustered_image: np.ndarray) -> dict:
+    # KMeans Implementation
+    def kmeans_clustering(self, image: np.ndarray, num_clusters=10) -> np.ndarray:
         """
-        Create a mapping from unique colors in the clustered image to unique labels.
+        Perform KMeans clustering on the image to reduce the number of colors.
         """
-        # Find unique colors in the clustered image
-        unique_colors = np.unique(clustered_image.reshape(-1, clustered_image.shape[-1]), axis=0)
-        # Map each unique color to a unique label starting from 1
-        color_map = {tuple(color): idx + 1 for idx, color in enumerate(unique_colors)}
-        print(color_map)
-        return color_map
+        print("KMeans Clustering")
+        # Reshape the image to a 2D array of pixels
+        pixels = image.reshape(-1, 3)
+        kmeans = KMeans(n_clusters=num_clusters, random_state=0).fit(pixels)
+        clustered_image = kmeans.cluster_centers_[kmeans.labels_].reshape(image.shape)
+        return np.uint8(clustered_image)
 
-    def get_label_positions(self, clustered_image: np.ndarray, color_map: dict) -> dict:
+    def get_region(self, clustered_image: np.ndarray, x: int, y: int, color: tuple, visited: np.ndarray) -> list:
         """
-        Get the positions (centers) for each color region based on the color map.
+        Find all pixels of the same color in a region starting from (x, y).
+        This version considers neighbors' neighbors to ensure we get the whole region.
         """
-        label_positions = {}  # This needs to be a dictionary
+        region = []  # List to store the coordinates of all pixels in the same color region
+        stack = [(x, y)]  # Stack for DFS, starting with the given pixel
 
-        for color, label in color_map.items():
-            # Create a binary mask for the current color region
-            mask = np.all(clustered_image == color, axis=-1)
-            
-            # Find the coordinates of the region where the mask is True
-            coords = np.argwhere(mask)
-            if coords.size == 0:
-                continue  # Skip if no region is found for this color
+        while stack:
+            cx, cy = stack.pop()  # Get the current pixel coordinates
+            if visited[cy, cx]:
+                continue  # Skip if this pixel has already been visited
+            if tuple(clustered_image[cy, cx]) == color:
+                visited[cy, cx] = True  # Mark the pixel as visited
+                region.append((cx, cy))  # Add the pixel to the region
 
-            # Compute the center of the region by averaging coordinates
-            center_y, center_x = coords.mean(axis=0).astype(int)
+                # Check neighboring pixels (all 8 directions)
+                for dx in [-1, 0, 1]:
+                    for dy in [-1, 0, 1]:
+                        # Skip the current pixel itself
+                        if dx == 0 and dy == 0:
+                            continue
+                        nx, ny = cx + dx, cy + dy
+                        # Ensure the neighbor is within bounds and hasn't been visited yet
+                        if 0 <= nx < clustered_image.shape[1] and 0 <= ny < clustered_image.shape[0] and not visited[ny, nx]:
+                            stack.append((nx, ny))  # Add the neighbor to the stack for further exploration
+        return region
 
-            # Store the label and its position (as a tuple) in the dictionary
-            label_positions[label] = (center_x, center_y)
-        
-        print("Label Positions:", label_positions)  # Debugging output
-        return label_positions
 
-    def place_labels(self, image: np.ndarray, label_positions: dict) -> np.ndarray:
+    def place_labels(self, image: np.ndarray, clustered_image: np.ndarray, min_size: int = 100) -> np.ndarray:
         """
-        Place labels on the original image at the specified positions.
+        Place labels on the image for each distinct region of color, 
+        only labeling regions that are above the specified size threshold.
         """
-        print(label_positions)
-        # Copy the original image for labeling
+        visited = np.zeros(clustered_image.shape[:2], dtype=bool)
         labeled_image = image.copy()
 
-        # Step 1: Draw the labels on the image
-        for label, (x, y) in label_positions.items():
-            # Place the label at the computed center of the color region
-            cv2.putText(labeled_image, str(label), (x, y),
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.6, (128, 128, 128), 2)  # Grey color text
-        
+        color_to_label = {}  # Map colors to labels
+        label = 1  # Start label from 1
+
+        for y in range(clustered_image.shape[0]):
+            for x in range(clustered_image.shape[1]):
+                if not visited[y, x]:  # If the pixel hasn't been visited
+                    color = tuple(clustered_image[y, x])  # Get the color at this pixel
+
+                    # Find the entire region of this color (flood fill)
+                    region = self.get_region(clustered_image, x, y, color, visited)
+
+                    # Only label regions larger than min_size
+                    if len(region) >= min_size:
+                        # If this color hasn't been assigned a label, do so
+                        if color not in color_to_label:
+                            color_to_label[color] = label
+                            label += 1  # Increment label for the next color
+                        
+                        # Label all pixels of this region with the same label
+                        region_label = color_to_label[color]
+
+                        # Calculate the center of the region for label placement
+                        center_x = int(np.mean([px[0] for px in region]))
+                        center_y = int(np.mean([px[1] for px in region]))
+
+                        # Draw the label at the center of the region
+                        cv2.putText(labeled_image, str(region_label), (center_x, center_y),
+                                    cv2.FONT_HERSHEY_SIMPLEX, 0.2, (0, 0, 0), 1)
+
         return labeled_image
 
-    def process_image(self, image: np.ndarray, clustered_image: np.ndarray) -> np.ndarray:
+
+    def labelling(self, image: np.ndarray, n_colors: int = 10) -> np.ndarray:
         """
         Main function to process the image and return a labeled version.
         """
-        # Step 1: Create a mapping of color to unique labels
-        color_map = self.color_label_map(clustered_image)
-        print(color_map)
-
-        # Step 2: Get positions for each label (based on color regions)
-        label_positions = self.get_label_positions(clustered_image, color_map)
-        print(label_positions)
-
-        # Step 3: Place labels on the original image
-        labeled_image = self.place_labels(image, label_positions)
-
+        # Apply KMeans clustering to get a clustered image
+        clustered_image = self.kmeans_clustering(image, n_colors)
+        # Place labels on the image based on color regions
+        labeled_image = self.place_labels(image, clustered_image)
         return labeled_image
