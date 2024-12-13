@@ -16,10 +16,20 @@ class ColorEditing():
         Perform KMeans clustering on the image to reduce the number of colors.
         """
         print("KMeans Clustering")
+       # Reshape the image to a 2D array of pixels
         pixels = image.reshape(-1, 3)
+        
+        # Perform KMeans clustering
         kmeans = KMeans(n_clusters=num_clusters, random_state=0).fit(pixels)
-        clustered_image = kmeans.cluster_centers_[kmeans.labels_].reshape(image.shape)
-        return np.uint8(clustered_image)
+        
+        # Get the cluster labels for each pixel
+        labels = kmeans.labels_.reshape(image.shape[:2])  # Reshape to 2D
+        
+        # Convert cluster centers to uint8 and assign them back to pixels
+        cluster_centers = np.uint8(kmeans.cluster_centers_)
+        clustered_image = cluster_centers[labels]
+        
+        return clustered_image, labels
     
     # Pick color
     def get_colors(self, image: np.ndarray) -> tuple:
