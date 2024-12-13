@@ -38,8 +38,11 @@ def KMeans(image: np.ndarray) -> np.ndarray:
     """ 
     color_editor = ColorEditing()
     # Possibly Replace the colors at the end
-    custom_kmeans = color_editor.kmeans_color_replacement(image, choose=0, strength=20, colors=10)
-    return custom_kmeans
+    k_colors = 10
+    choose = 0
+    f_colors = k_colors + choose
+    custom_kmeans = color_editor.kmeans_color_replacement(image, choose=choose, strength=20, colors=k_colors)
+    return custom_kmeans, f_colors
 
 def create_facets(image: np.ndarray) -> np.ndarray:
     """
@@ -47,20 +50,21 @@ def create_facets(image: np.ndarray) -> np.ndarray:
     """
     facet_creator = Facets()
     facets = facet_creator.build_facets(image)
-    facet_pruning = facet_creator.prune_small_facets(facets=facets, original_image=image, min_size=1)
+    facet_pruning = facet_creator.prune_small_facets(facets=facets, original_image=image, min_size=500)
     return facet_pruning
 
-def create_borders(image: np.ndarray) -> np.ndarray:
+def create_borders(image: np.ndarray) -> np.ndarray:    
     border_creator = Borders()
     borders, border_image, contour_image = border_creator.detect_borders(image)
     segmented_image = border_creator.segment_borders(border_image, borders)
     return border_image, segmented_image, contour_image
 
-def create_labels(image: np.ndarray) -> np.ndarray:
+def create_labels(image: np.ndarray, n_colors: int = 10) -> np.ndarray:
     # Get Clustered Image NEED TO RUN WITH AMOUNT OF COLORS IN THE IMAGE
-    clustered_image = ColorEditing.kmeans_clustering(ColorEditing, image, 10)
     label_creator = Labels()
-    label_image = label_creator.place_labels(image, clustered_image)
+    label_image = label_creator.labelling(image)
+    # label_creator = Labels2()
+    # label_image = label_creator.process_image(image)
     return label_image
 
 # Main function that coordinates the entire process
@@ -71,20 +75,23 @@ def start_application(image_path: str):
     load_dict = load_image(image_path)
 
     # Initial KMeans
-    clustered_image = KMeans(load_dict["resized_img"])
+    clustered_image, n_colors = KMeans(load_dict["resized_img"])
     # plot_image(clustered_image)
 
     # Facet building and pruning
     pruned_image = create_facets(clustered_image)
-    # plot_image(pruned_image)
+    plot_image(pruned_image)
+
+    # pruned_image = cv2.cvtColor(cv2.imread("C:\Victor\DrawByNumbers\TestOutput\PRUNING_OUTPUT.png"), cv2.COLOR_BGR2RGB)
+
 
     # Detecting borders and segmentation
     border_image, segment_image, outline_image = create_borders(pruned_image)
-    # compare_images(border_image, segment_image, outline_image, title1="Borders", title2="Segments", title3="Outlines")
+    compare_images(border_image, segment_image, outline_image, title1="Borders", title2="Segments", title3="Outlines")
 
     # ADD MORE DETAIL WITH MORE TRANSPARENCY
     # Label the image
-    labeled_image = create_labels(border_image)
+    labeled_image = create_labels(pruned_image, n_colors)
     plot_image(labeled_image)
 
 # This ensures the app only runs when main.py is executed directly
