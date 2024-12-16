@@ -4,7 +4,7 @@ import sys, os
 
 # Adjusting the path to import ImageProcessor correctly
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'src')))
-from image_processing.load import ImageProcessor
+from image_processing_2.load import ImageProcessor
 
 class TestImageProcessor(unittest.TestCase):
     def setUp(self):

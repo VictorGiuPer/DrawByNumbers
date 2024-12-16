@@ -1,5 +1,5 @@
 from tools import plot_image, compare_images, plot_image_3d, resize_image, blur_image
-from image_processing.load import ImageProcessor
+from image_processing_2.load import ImageProcessor
 from image_processing.pre_processing import Preprocessor
 from image_processing.edge_detector import EdgeDetector
 from image_processing.color_scheme import ColorSchemeCreator

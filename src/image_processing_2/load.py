@@ -28,7 +28,7 @@ from matplotlib import pyplot as plt
 import numpy as np
 
 
-class ImageProcessor:
+class Loader:
     """
     A class to handle core image processing tasks such as loading, saving, 
     grayscale conversion, resizing, and blurring for pre-processing.
@@ -134,13 +134,3 @@ class ImageProcessor:
         resized_image = cv2.resize(self.image, dim, interpolation=cv2.INTER_AREA)
         return resized_image
     
-    def save_image(self, output_path: str) -> None:
-        """
-        Save the current image to a file.
-
-        Parameters:
-        - output_path (str): Path to save the image.
-        """
-        if self.image is None:
-            raise ValueError("No image loaded. Load an image first.")
-        cv2.imwrite(output_path, self.image)
