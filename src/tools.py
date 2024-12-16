@@ -10,16 +10,21 @@ These functions are intended to help visualize image processing steps in a conve
 
 import matplotlib.pyplot as plt
 import numpy as np
-from mpl_toolkits.mplot3d import Axes3D
 import cv2
+import cv2
+import numpy as np
+from scipy.spatial.distance import cdist
+from skimage.color import rgb2lab, lab2rgb
+import time
+
 
 
 # Plotting
-class Plotter():
+class PlottingTools():
     def __init__(self):
         pass
 
-    def plot_image(image: np.ndarray, title: str = "Image", cmap: str = None) -> None:
+    def plot_image(self, image: np.ndarray, title: str = "Image", cmap: str = None) -> None:
         """Displays a single image with an optional colormap."""
         # Default to grayscale if single-channel
         if cmap is None and len(image.shape) == 2:
@@ -32,7 +37,7 @@ class Plotter():
         plt.axis('off')
         plt.show()
 
-    def plot_image_3d(image: np.ndarray, downsample_factor: int = 1, colormap: str = 'viridis'):
+    def plot_image_3d(self, image: np.ndarray, downsample_factor: int = 1, colormap: str = 'viridis'):
         """
         Plot a 3D surface representation of an image.
 
@@ -86,7 +91,7 @@ class Plotter():
         ax.set_zlabel('Pixel Intensity')
         plt.show()
 
-    def compare_images(image1: np.ndarray, image2: np.ndarray, image3: np.ndarray = None, 
+    def compare_images(self, image1: np.ndarray, image2: np.ndarray, image3: np.ndarray = None, 
                                 title1: str = "Image 1", title2: str = "Image 2", title3: str = "Image 3", 
                                 cmap1: str = None, cmap2: str = None, cmap3: str = None) -> None:
         """Displays up to three images side by side."""
@@ -122,18 +127,32 @@ class Plotter():
         plt.show()
 
 # General image processing
-def resize_image(image: np.ndarray, increase: int = 10) -> np.ndarray:
-    height, width = image.shape[:2]
-    new_height = height + (increase / 100) * height
-    new_width = width + (increase / 100) * width
-    new_dim = (int(new_width), int(new_height))
-    resized = cv2.resize(image, new_dim)
-    return resized
+class GeneralTools():
+    def __init__(self):
+        pass
 
-def blur_image(image: np.ndarray, kernel_size: int = 5) -> np.ndarray:
-    blurred_image =  cv2.GaussianBlur(image, (kernel_size, kernel_size), 0)
-    return blurred_image
+    def resize_image(self, image: np.ndarray, increase: int = 10) -> np.ndarray:
+        height, width = image.shape[:2]
+        new_height = height + (increase / 100) * height
+        new_width = width + (increase / 100) * width
+        new_dim = (int(new_width), int(new_height))
+        resized = cv2.resize(image, new_dim)
+        return resized
 
+    def blur_image(self, image: np.ndarray, kernel_size: int = 5) -> np.ndarray:
+        blurred_image =  cv2.GaussianBlur(image, (kernel_size, kernel_size), 0)
+        return blurred_image
+
+    def save_image(self, output_path: str) -> None:
+        """
+        Save the current image to a file.
+
+        Parameters:
+        - output_path (str): Path to save the image.
+        """
+        if self.image is None:
+            raise ValueError("No image loaded. Load an image first.")
+        cv2.imwrite(output_path, self.image)
 
 # Color editing tools
 
@@ -215,7 +234,7 @@ class ColorTools:
         return tuple(selected_color)
     
     # Adapt color zones with 1 color
-    def color_zones(self, image: np.ndarray, strength: int = 20) -> np.ndarray:
+    def refine_threshold(self, image: np.ndarray, strength: int = 10) -> np.ndarray:
         """
         Refines color zones in the image by adapting areas near a selected color based on perceptual 
         similarity in Lab color space.
@@ -248,43 +267,46 @@ class ColorTools:
         print("Threshold Refining")
         # Select Color
         selected_color = self.get_colors(image)
-        # If no colors are selected (empty list), exit the loop early.
-        if len(selected_color) == 0:
-            raise ValueError("No Color has been selected.")
-        # Convert the selected color to Lab space
-        selected_color_lab = rgb2lab(np.array(selected_color, dtype=np.float32).reshape(1, 1, 3) / 255.0)
+        while selected_color:
+            # If no colors are selected (empty list), exit the loop early.
+            if len(selected_color) == 0:
+                raise ValueError("No Color has been selected.")
+            # Convert the selected color to Lab space
+            selected_color_lab = rgb2lab(np.array(selected_color, dtype=np.float32).reshape(1, 1, 3) / 255.0)
 
-        # Maximum perceptual distance in Lab space (approximation)
-        max_distance = 100.0  # Lab distances range from 0 to ~100
+            # Maximum perceptual distance in Lab space (approximation)
+            max_distance = 100.0  # Lab distances range from 0 to ~100
 
-        # Adapt threshold based on strength percentage
-        threshold = (strength / 100) * max_distance
+            # Adapt threshold based on strength percentage
+            threshold = (strength / 100) * max_distance
 
-        # Convert the input image to Lab space
-        image_lab = rgb2lab(image.astype(np.float32) / 255.0)
+            # Convert the input image to Lab space
+            image_lab = rgb2lab(image.astype(np.float32) / 255.0)
 
-        # Flatten the image and selected color arrays for distance calculation
-        image_lab_flat = image_lab.reshape((-1, 3))
-        selected_color_lab_flat = selected_color_lab.reshape(1, 3)
+            # Flatten the image and selected color arrays for distance calculation
+            image_lab_flat = image_lab.reshape((-1, 3))
+            selected_color_lab_flat = selected_color_lab.reshape(1, 3)
 
-        # Calculate Euclidean distances from the selected color for all pixels in the image (in Lab space)
-        distance = cdist(image_lab_flat.astype(np.float32),
-                        selected_color_lab_flat.astype(np.float32),
-                        metric='euclidean').flatten()
+            # Calculate Euclidean distances from the selected color for all pixels in the image (in Lab space)
+            distance = cdist(image_lab_flat.astype(np.float32),
+                            selected_color_lab_flat.astype(np.float32),
+                            metric='euclidean').flatten()
 
-        # Create a mask for pixels that are within the threshold distance to the selected color
-        mask = distance < threshold
+            # Create a mask for pixels that are within the threshold distance to the selected color
+            mask = distance < threshold
 
-        # Reshape the mask back to the image shape (height, width)
-        mask = mask.reshape(image.shape[0], image.shape[1])
+            # Reshape the mask back to the image shape (height, width)
+            mask = mask.reshape(image.shape[0], image.shape[1])
 
-        # Create a copy of the original image to modify
-        smoothed_image = image.copy()
+            # Create a copy of the original image to modify
+            smoothed_image = image.copy()
 
-        # Apply the selected color to the pixels that match the mask
-        smoothed_image[mask] = selected_color
+            # Apply the selected color to the pixels that match the mask
+            smoothed_image[mask] = selected_color
+            image = smoothed_image
+            selected_color = self.get_colors(image)
 
-        return smoothed_image
+        return image
     
     # Adapt color zones with 2 colors (perceptual)
     def midpoint_perceptual(self, image: np.ndarray, strength: int = 10) -> np.ndarray:
@@ -314,47 +336,50 @@ class ColorTools:
         Notes:
         - The function ensures all modified pixel values remain within valid RGB range (0-255).
         """
-
         print("Midpoint Refining")
         c1 = self.get_colors(image)
         c2 = self.get_colors(image)
-        # Convert RGB colors to Lab (scaling RGB values to 0-1 for Lab conversion)
-        c1_lab = rgb2lab(np.array(c1, dtype=np.float32).reshape(1, 1, 3) / 255.0)
-        c2_lab = rgb2lab(np.array(c2, dtype=np.float32).reshape(1, 1, 3) / 255.0)
-        
-        # Calculate lab midpoint and convert to rgb
-        midpoint_lab = (c1_lab + c2_lab) / 2
-        midpoint_rgb = tuple(lab2rgb(midpoint_lab).squeeze() * 255)
-        print(f"Midpoint Color (RGB): {midpoint_rgb}")
+        while c1 and c2:
+            # Convert RGB colors to Lab (scaling RGB values to 0-1 for Lab conversion)
+            c1_lab = rgb2lab(np.array(c1, dtype=np.float32).reshape(1, 1, 3) / 255.0)
+            c2_lab = rgb2lab(np.array(c2, dtype=np.float32).reshape(1, 1, 3) / 255.0)
+            
+            # Calculate lab midpoint and convert to rgb
+            midpoint_lab = (c1_lab + c2_lab) / 2
+            midpoint_rgb = tuple(lab2rgb(midpoint_lab).squeeze() * 255)
+            print(f"Midpoint Color (RGB): {midpoint_rgb}")
 
-        # Calculate threshold based on strength percentage
-        max_distance = 100
-        threshold = max_distance * (strength / 100)
+            # Calculate threshold based on strength percentage
+            max_distance = 100
+            threshold = max_distance * (strength / 100)
 
-        # Convert image to Lab space for perceptual distance calculations
-        image_lab =  rgb2lab(image.astype(np.float32) / 255.00)
+            # Convert image to Lab space for perceptual distance calculations
+            image_lab =  rgb2lab(image.astype(np.float32) / 255.00)
 
-        # Calculate distances from both selected colors in lab space
-        c1_lab_flat = c1_lab.reshape(1, 3)
-        c2_lab_flat = c2_lab.reshape(1, 3)
-        image_lab_flat = image_lab.reshape((-1, 3))
-        distances_c1 = cdist(image_lab_flat, c1_lab_flat, metric="euclidean").flatten()
-        distances_c2 = cdist(image_lab_flat, c2_lab_flat, metric="euclidean").flatten()
+            # Calculate distances from both selected colors in lab space
+            c1_lab_flat = c1_lab.reshape(1, 3)
+            c2_lab_flat = c2_lab.reshape(1, 3)
+            image_lab_flat = image_lab.reshape((-1, 3))
+            distances_c1 = cdist(image_lab_flat, c1_lab_flat, metric="euclidean").flatten()
+            distances_c2 = cdist(image_lab_flat, c2_lab_flat, metric="euclidean").flatten()
 
-        # Create a mask for pixels within the threshold for either selected color
-        mask = (distances_c1 < threshold) | (distances_c2 < threshold)
-        
-        # Modify the image: set all matching pixels to the perceptual midpoint
-        modified_lab = image_lab_flat.copy()
-        modified_lab[mask] = midpoint_lab.flatten()
+            # Create a mask for pixels within the threshold for either selected color
+            mask = (distances_c1 < threshold) | (distances_c2 < threshold)
+            
+            # Modify the image: set all matching pixels to the perceptual midpoint
+            modified_lab = image_lab_flat.copy()
+            modified_lab[mask] = midpoint_lab.flatten()
 
-        modified_image_lab = modified_lab.reshape(image_lab.shape)
-        modified_image_rgb = lab2rgb(modified_image_lab) * 255
+            modified_image_lab = modified_lab.reshape(image_lab.shape)
+            modified_image_rgb = lab2rgb(modified_image_lab) * 255
 
-        # Ensure the values are in valid range and convert to uint8
-        modified_image_rgb = np.clip(modified_image_rgb, 0, 255).astype(np.uint8)
+            # Ensure the values are in valid range and convert to uint8
+            modified_image_rgb = np.clip(modified_image_rgb, 0, 255).astype(np.uint8)
+            image = modified_image_rgb
+            c1 = self.get_colors(image)
+            c2 = self.get_colors(image)
 
-        return modified_image_rgb
+        return image
 
     # Select Box For box_color_replacement
     def box_select(self, image: np.ndarray) -> tuple:
@@ -423,32 +448,37 @@ class ColorTools:
         print("Box Color Replacement") 
         c1 = self.get_colors(image)
         c2 = self.get_colors(image)
-        time.sleep(1)
-        rect = self.box_select(image)
-        (x1, y1), (x2, y2) = rect
+        while c1 and c2:
+            time.sleep(1)
+            rect = self.box_select(image)
+            (x1, y1), (x2, y2) = rect
 
-        # Crop the defined rectangle
-        region = image[y1:y2, x1:x2]
+            # Crop the defined rectangle
+            region = image[y1:y2, x1:x2]
 
-        # Calculate the threshold in RGB space
-        max_distance = 441.67  # Max possible Euclidean distance in RGB
-        threshold = (strength / 100) * max_distance
+            # Calculate the threshold in RGB space
+            max_distance = 441.67  # Max possible Euclidean distance in RGB
+            threshold = (strength / 100) * max_distance
 
-        # Flatten the region for easier color comparison
-        region_flat = region.reshape((-1, 3))
+            # Flatten the region for easier color comparison
+            region_flat = region.reshape((-1, 3))
 
-        # Calculate the Euclidean distance from c1
-        distances = cdist(region_flat.astype(np.float32), np.array([c1], dtype=np.float32)).flatten()
+            # Calculate the Euclidean distance from c1
+            distances = cdist(region_flat.astype(np.float32), np.array([c1], dtype=np.float32)).flatten()
 
-        # Create a mask for pixels matching the color within the threshold
-        mask = distances < threshold
-        mask = mask.reshape(region.shape[:2])
+            # Create a mask for pixels matching the color within the threshold
+            mask = distances < threshold
+            mask = mask.reshape(region.shape[:2])
 
-        # Replace the matching pixels with c2
-        region[mask] = c2
+            # Replace the matching pixels with c2
+            region[mask] = c2
 
-        # Put the modified region back into the original image
-        modified_image = image.copy()
-        modified_image[y1:y2, x1:x2] = region
+            # Put the modified region back into the original image
+            modified_image = image.copy()
+            modified_image[y1:y2, x1:x2] = region
+            image = modified_image
+            c1 = self.get_colors(image)
+            c2 = self.get_colors(image)
 
         return modified_image
+
