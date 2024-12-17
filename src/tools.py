@@ -143,16 +143,17 @@ class GeneralTools():
         blurred_image =  cv2.GaussianBlur(image, (kernel_size, kernel_size), 0)
         return blurred_image
 
-    def save_image(self, output_path: str) -> None:
+    def save_image(self, image: np.ndarray, output_path: str) -> None:
         """
         Save the current image to a file.
 
         Parameters:
+        - image (np.ndarray): Image
         - output_path (str): Path to save the image.
         """
-        if self.image is None:
+        if image is None:
             raise ValueError("No image loaded. Load an image first.")
-        cv2.imwrite(output_path, self.image)
+        cv2.imwrite(output_path, image)
 
 # Color editing tools
 
