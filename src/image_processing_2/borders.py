@@ -5,7 +5,8 @@ class Borders():
     def __init__(self):
         pass
 
-    def detect_borders(self, image: np.ndarray) -> tuple[list, np.ndarray]:
+    def detect_borders(self, image: np.ndarray, sensitivity_low: int = 50, 
+                       sensistivity_high: int = 80) -> tuple[list, np.ndarray]:
         """
         Detect borders between facets using Canny edge detection.
         """
@@ -17,42 +18,80 @@ class Borders():
         blurred = cv2.GaussianBlur(gray, (5, 5), 0)
 
         # Perform Canny edge detection
-        edges = cv2.Canny(blurred, threshold1=50, threshold2=150)
+        border = cv2.Canny(blurred, threshold1=sensitivity_low, threshold2=sensistivity_high)
+        
+        return border
 
+    def overlay(self, image: np.ndarray, borders: np.ndarray) -> list[np.ndarray, np.ndarray, np.ndarray]:
         # Find contours on the edges image
-        contours, _ = cv2.findContours(edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        contours, _ = cv2.findContours(borders, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
         # Draw contours (borders) on the original image for visualization with dark grey color
         border_image = image.copy()
-        cv2.drawContours(border_image, contours, -1, (169, 169, 169), 1)  # Dark grey borders
+        cv2.drawContours(border_image, contours, -1, (169, 0, 0), 1)  # Dark grey borders
         
         # Blank Contour Image
-        contour_image = np.zeros_like(edges)
+        contour_image = np.zeros_like(borders)
         # Draw the contours with 1-pixel thickness
         cv2.drawContours(contour_image, contours, -1, (255, 255, 255), 1)
 
-        return contours, border_image, contour_image
+        return border_image, contour_image
 
-
-    def segment_borders(self, image: np.ndarray, contours: list) -> np.ndarray:
+    def export_outlines(self, edges: np.ndarray) -> np.ndarray:     
         """
-        Segment the detected borders into distinct regions based on contours.
+        Returns only the detected outlines with a white background as a numpy array.
         """
-        print("Border Segmentation")
-        # Create a blank mask to segment the borders
-        mask = np.zeros(image.shape[:2], dtype=np.uint8)
+        # Threshold the outlines to get a binary image (255 for edges, 0 for background)
+        _, outlines = cv2.threshold(edges, 60, 255, cv2.THRESH_BINARY)
 
-        # Draw filled contours (regions) on the mask
-        cv2.drawContours(mask, contours, -1, 255, thickness=1)
+        # Skeletonize the binary outlines image to thin the edges
+        # outlines = self.skeletonize(outlines)
 
-        # Perform morphological operations to clean the mask (optional)
-        kernel = np.ones((5, 5), np.uint8)
-        cleaned_mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel)
+        # Create a white background image (BGR: [255, 255, 255])
+        white_background = np.ones((outlines.shape[0], outlines.shape[1], 3), dtype=np.uint8) * 255
 
-        # Use the mask to segment the regions from the original image
-        segmented_image = cv2.bitwise_and(image, image, mask=cleaned_mask)
+        # Set the edges to black ([0, 0, 0]) on the white background
+        white_background[outlines == 255] = [0, 0, 0]  # Black for edges
 
-        # Highlight the borders in a separate color (red)
-        image[cleaned_mask == 255] = [200, 0, 0]  # Mark the borders in red
+        return white_background
+    
+    def skeletonize(self, binary_edges: np.ndarray) -> np.ndarray:
+        """
+        Thins edges using skeletonization.
 
-        return segmented_image
+        Parameters:
+        - binary_edges (np.ndarray): Binary edge image with edges as white (255) and background as black (0).
+
+        Returns:
+        - skeleton (np.ndarray): Skeletonized version of the edge map, where edges are thinned to 1-pixel width.
+        """
+        # Initialize an empty image for the final skeleton
+        skeleton = np.zeros_like(binary_edges)
+
+        # Make a copy of the input edges to work on
+        temp = binary_edges.copy()
+
+        # Define the structuring element (3x3 cross-shaped kernel)
+        kernel = cv2.getStructuringElement(cv2.MORPH_CROSS, (3, 3))
+
+        while True:
+            # Erode the binary image to shrink the white regions (edges)
+            eroded = cv2.erode(temp, kernel)
+            
+            # Dilate the eroded image to approximate the original size
+            dilated = cv2.dilate(eroded, kernel)
+            
+            # Subtract the dilated image from the original to find the 'skeleton part'
+            skeleton_part = cv2.subtract(temp, dilated)
+            
+            # Add the skeleton part to the overall skeleton
+            skeleton = cv2.bitwise_or(skeleton, skeleton_part)
+            
+            # Update the temporary image with the eroded version for the next iteration
+            temp = eroded.copy()
+
+            # If there are no more white pixels left, stop the loop
+            if cv2.countNonZero(temp) == 0:
+                break
+
+        return skeleton
