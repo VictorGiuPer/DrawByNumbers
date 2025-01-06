@@ -73,9 +73,10 @@ class Labels():
 
         # Attempt to use a custom font (ensure the font path is correct for your OS)
         try:
-            font_path = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"  # Linux (example)
-            font = ImageFont.truetype(font_path, 20)
+            font_path = "C:/Windows/Fonts/Arial.ttf"
+            font = ImageFont.truetype(font_path, 10)
         except IOError:
+            print("default")
             font = ImageFont.load_default()  # Fallback to default if font is not found
 
         for y in range(clustered_image.shape[0]):
