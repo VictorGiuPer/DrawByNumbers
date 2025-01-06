@@ -15,6 +15,7 @@ import cv2
 import numpy as np
 from scipy.spatial.distance import cdist
 from skimage.color import rgb2lab, lab2rgb
+from sklearn.cluster import KMeans
 import time
 
 
@@ -482,4 +483,43 @@ class ColorTools:
             c2 = self.get_colors(image)
 
         return modified_image
+
+    # Reduce detail in final image
+    def localized_pruning(self, image: np.ndarray, n_colors: int = 5) -> np.ndarray:
+        """
+        Allows the user to select a region of the image for localized pruning 
+        to reduce detail in that area.
+        
+        Args:
+            image (np.ndarray): The input image.
+            n_colors (int): Number of colors to reduce the selected region to.
+            
+        Returns:
+            np.ndarray: The updated image with reduced detail in the selected area.
+        """
+        # Allow the user to select a region of interest (ROI)
+        print("Select the region you want to prune and press ENTER.")
+        roi = cv2.selectROI("Select ROI", image, fromCenter=False, showCrosshair=True)
+        cv2.destroyWindow("Select ROI")
+
+        if roi == (0, 0, 0, 0):  # If no ROI is selected
+            print("No region selected. Returning the original image.")
+            return image
+
+        x, y, w, h = map(int, roi)
+        roi_image = image[y:y+h, x:x+w]
+
+        # Reshape the ROI for clustering
+        pixels = roi_image.reshape(-1, 3)
+
+        # Apply KMeans clustering to reduce detail
+        kmeans = KMeans(n_clusters=n_colors, random_state=0).fit(pixels)
+        clustered_pixels = kmeans.cluster_centers_[kmeans.labels_].reshape(roi_image.shape)
+        clustered_pixels = np.uint8(clustered_pixels)
+
+        # Replace the ROI in the original image with the clustered result
+        pruned_image = image.copy()
+        pruned_image[y:y+h, x:x+w] = clustered_pixels
+
+        return pruned_image
 
