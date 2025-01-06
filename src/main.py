@@ -40,10 +40,10 @@ def KMeans(image: np.ndarray) -> np.ndarray:
     """ 
     color_editor = ColorEditing()
     # Possibly Replace the colors at the end
-    k_colors = 10
-    choose = 5
+    k_colors = 24
+    choose = 0
     f_colors = k_colors + choose
-    custom_kmeans = color_editor.kmeans_color_replacement(image, choose=choose, strength=10, colors=k_colors)
+    custom_kmeans = color_editor.kmeans_color_replacement(image, choose=choose, strength=5, colors=k_colors)
     return custom_kmeans, f_colors
 
 # Create and prune facets
@@ -53,7 +53,7 @@ def facets(image: np.ndarray) -> np.ndarray:
     """
     facet_creator = Facets()
     facets = facet_creator.build_facets(image)
-    facet_pruning = facet_creator.prune_small_facets(facets=facets, original_image=image, min_size=600)
+    facet_pruning = facet_creator.prune_small_facets(facets=facets, original_image=image, min_size=700)
     return facet_pruning
 
     # Segment and Create
@@ -61,7 +61,7 @@ def facets(image: np.ndarray) -> np.ndarray:
 # Create borders and segment image
 def borders(image: np.ndarray) -> np.ndarray:    
     border_creator = Borders()
-    outlines = border_creator.detect_borders(image, 10)
+    outlines = border_creator.detect_borders(image, 20)
     border_image, outline_black = border_creator.overlay(image, outlines)
     outline_template = border_creator.export_outlines(outlines) 
     return border_image, outline_black, outline_template
@@ -84,39 +84,44 @@ def start_application(image_path: str):
     load_dict = load(image_path)
 
 
-    """ # Initial custom KMeans (keep specific colors)
+    # Initial custom KMeans (keep specific colors)
     clustered_image, n_colors = KMeans(load_dict["resized_img"])
     # plotter.plot_image(clustered_image)
 
     # Use tools to improve color reduction
 
-    co_tool_image = co_tools.refine_threshold(clustered_image, strength=10)
-    co_tool_image = co_tools.midpoint_perceptual(co_tool_image, strength=10)
-    co_tool_image = co_tools.box_color_replacement(co_tool_image)
-    pl_tools.plot_image(co_tool_image)
+    # co_tool_image = co_tools.refine_threshold(clustered_image, strength=5)
+    # co_tool_image = co_tools.midpoint_perceptual(co_tool_image, strength=5)
+    # co_tool_image = co_tools.box_color_replacement(co_tool_image)
+    # pl_tools.plot_image(co_tool_image)
     # ge_tools.save_image("C:\Victor\DrawByNumbers\DrawByNumbers\\tests\output", co_tool_image)
+    co_tool_image = clustered_image
+
 
     # Create and prune facets
-    pruned_image = facets(co_tool_image)
-    pl_tools.plot_image(pruned_image) """
+    # pruned_image = facets(co_tool_image)
+    # pl_tools.plot_image(pruned_image)
 
-    pruned_image = cv2.cvtColor(cv2.imread("C:\Victor\DrawByNumbers\TestOutput\OUTLINE_TEST.png"), cv2.COLOR_BGR2RGB)
-    n_colors = 12
+    pruned_image = cv2.cvtColor(cv2.imread("C:\Victor\DrawByNumbers\TestOutput\\NEW PICTURE.png"), cv2.COLOR_BGR2RGB)
+    n_colors = 20
 
     # Create borders and segment image
-    border_image, outline_black, outline_template = borders(pruned_image)
-    pl_tools.compare_images(border_image, outline_black, outline_template, 
-                            title1="Borders", title2="Outline Black", title3="Outline Template")
-
-    # ADD MORE DETAIL WITH MORE TRANSPARENCY
-    # Create and place labels
-    labeled_image, labeled_template = labels(pruned_image, outline_template, n_colors)
-    pl_tools.compare_images(labeled_image, labeled_template)
+    again = True
+    while again:
+        border_image, outline_black, outline_template = borders(pruned_image)
+        pl_tools.compare_images(border_image, outline_black, outline_template, 
+                                title1="Borders", title2="Outline Black", title3="Outline Template")
+        # Create and place labels
+        labeled_image, labeled_template = labels(pruned_image, outline_template, n_colors)
+        pl_tools.compare_images(labeled_image, labeled_template)
+        again = bool(input("Again: "))
+        pruned_image = co_tools.localized_pruning(pruned_image, 3)
 
 # Run app only when main.py is executed directly
 if __name__ == "__main__":
     # Example image paths:
     # image_path = "C:/Victor/Photo & Video/Nadine/_DSC0283.jpg"
-    image_path = "C:\Victor\DrawByNumbers\TestImages\mickey-mouse-cinderella-castle-1024x683.jpg"
+    # image_path = "C:\Victor\DrawByNumbers\TestImages\mickey-mouse-cinderella-castle-1024x683.jpg"
     # image_path = "C:/Victor/Photo & Video/Nadine/20240815_172047.jpg"
+    image_path = "C:\Victor\Photo & Video\\Nadine\\20240816_214217.jpg"
     start_application(image_path)  # Run the app
