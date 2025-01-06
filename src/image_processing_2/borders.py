@@ -5,8 +5,8 @@ class Borders():
     def __init__(self):
         pass
 
-    def detect_borders(self, image: np.ndarray, sensitivity_low: int = 50, 
-                       sensistivity_high: int = 80) -> tuple[list, np.ndarray]:
+    def detect_borders(self, image: np.ndarray, sensitivity_low: int = 30, 
+                       sensistivity_high: int = 50) -> tuple[list, np.ndarray]:
         """
         Detect borders between facets using Canny edge detection.
         """
