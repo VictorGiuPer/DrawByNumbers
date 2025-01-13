@@ -51,7 +51,7 @@ class Borders():
         white_background = np.ones((outlines.shape[0], outlines.shape[1], 3), dtype=np.uint8) * 255
 
         # Set the edges to black ([0, 0, 0]) on the white background
-        white_background[outlines == 255] = [0, 0, 0]  # Black for edges
+        white_background[outlines == 255] = [155, 155, 155]  # Black for edges
 
         return white_background
     
