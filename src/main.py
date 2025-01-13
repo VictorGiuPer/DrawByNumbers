@@ -99,11 +99,11 @@ def start_application(image_path: str):
 
 
     # Create and prune facets
-    # pruned_image = facets(co_tool_image)
-    # pl_tools.plot_image(pruned_image)
+    pruned_image = facets(co_tool_image)
+    pl_tools.plot_image(pruned_image)
 
-    pruned_image = cv2.cvtColor(cv2.imread("C:\Victor\DrawByNumbers\TestOutput\\NEW PICTURE.png"), cv2.COLOR_BGR2RGB)
-    n_colors = 20
+    """  pruned_image = cv2.cvtColor(cv2.imread("C:\Victor\DrawByNumbers\TestOutput\\NEW PICTURE.png"), cv2.COLOR_BGR2RGB)
+    n_colors = 20 """
 
     # Create borders and segment image
     again = True
