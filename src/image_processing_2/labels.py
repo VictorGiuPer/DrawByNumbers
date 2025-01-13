@@ -74,7 +74,7 @@ class Labels():
         # Attempt to use a custom font (ensure the font path is correct for your OS)
         try:
             font_path = "C:/Windows/Fonts/Arial.ttf"
-            font = ImageFont.truetype(font_path, 10)
+            font = ImageFont.truetype(font_path, 6)
         except IOError:
             print("default")
             font = ImageFont.load_default()  # Fallback to default if font is not found
