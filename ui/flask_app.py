@@ -8,7 +8,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 's
 from main import start_application
 app = Flask(__name__)
 
-UPLOAD_FOLDER = 'data/'  # Point to the 'data' folder
+UPLOAD_FOLDER = 'ui/data/uploads/'  # Point to the 'data' folder
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 @app.route('/')
@@ -29,15 +29,19 @@ def upload_file():
     filename = os.path.join(app.config['UPLOAD_FOLDER'], file.filename)
     file.save(filename)
     
-    # Call your image processing function from src
-    processed_image = start_application(filename)  # Assuming this function processes the image and returns the result
-    
-    # Save the processed image or return a response
-    processed_filename = os.path.join(app.config['UPLOAD_FOLDER'], 'processed_' + file.filename)
-    processed_image.save(processed_filename)  # Save processed image if needed
+    try:
+        # Call your image processing function from src
+        processed_image, processed_png = start_application(filename)
+        # Save the processed image or return a response
+        processed_filename = os.path.join(app.config['UPLOAD_FOLDER'], 'processed_' + file.filename)
+        processed_png.save(processed_filename)
 
-    # Render a response with the processed image
-    return render_template('result.html', filename=processed_filename)
+        # Render a response with the processed image
+        return render_template('result.html', filename=processed_filename)
+    finally:
+        # Clean up: Delete the uploaded file
+        if os.path.exists(filename):
+            os.remove(filename)
 
 if __name__ == '__main__':
     app.run(debug=True)
