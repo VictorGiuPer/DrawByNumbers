@@ -117,8 +117,9 @@ def start_application(image_path: str):
         again = bool(input("Again: "))
         pruned_image = co_tools.localized_pruning(pruned_image, 3)
 
-    processed_image = pruned_image   
-    return processed_image
+    processed_image = pruned_image
+    processed_png = Image.fromarray(processed_image)  
+    return processed_image, processed_png
 
 # Run app only when main.py is executed directly
 if __name__ == "__main__":
@@ -127,4 +128,4 @@ if __name__ == "__main__":
     # image_path = "C:\Victor\DrawByNumbers\TestImages\mickey-mouse-cinderella-castle-1024x683.jpg"
     # image_path = "C:/Victor/Photo & Video/Nadine/20240815_172047.jpg"
     image_path = "C:\Victor\Photo & Video\\Nadine\\20240816_214217.jpg"
-    processed_image = start_application(image_path)  # Run the app
+    processed_image, processed_png = start_application(image_path)  # Run the app
