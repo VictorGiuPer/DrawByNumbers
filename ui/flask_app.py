@@ -16,7 +16,11 @@ def home():
     """Rendering the home page (index.html)"""
     return render_template('index.html')
 
-@app.route('/upload', methods=['POST'])
+
+
+
+
+""" @app.route('/upload', methods=['POST'])
 def upload_file():
     if 'file' not in request.files:
         return redirect(request.url)
@@ -42,6 +46,7 @@ def upload_file():
         # Clean up: Delete the uploaded file
         if os.path.exists(filename):
             os.remove(filename)
+"""
 
 if __name__ == '__main__':
     app.run(debug=True)
