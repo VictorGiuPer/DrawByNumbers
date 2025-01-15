@@ -1,0 +1,34 @@
+body {
+    background-color: #56208F;
+    color: white;
+    font-family: Arial, sans-serif;
+}
+
+/* Outer container (to represent the 1440x1024 bounds) */
+.container {
+    width: 1440px;
+    height: 1024px;
+    overflow: hidden; /* Hide any part of the square that goes outside the container */
+    position: relative; /* To position inner elements absolutely */
+}
+
+.navbar {
+    width: 1440px;
+    height: 91px;
+    background-color: #FFFFFF;
+    opacity: 80;
+    border-radius: 10;
+    position: absolute; /* Position it relative to the body */
+    left: 0px;   /* X Position */
+    top: 0px;    /* Y Position */
+}
+
+.background_square {
+    width: 1374.03px;
+    height: 811.74px;
+    background-color: #EDEDED;
+    position: absolute; /* Position it relative to the body */
+    left: -45px;   /* X Position */
+    top: 281px;    /* Y Position */
+    rotate: 14;
+}
